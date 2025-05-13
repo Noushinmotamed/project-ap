@@ -1,0 +1,46 @@
+<hibernate-configuration>
+    <session-factory>
+        <!-- PostgreSQL Database connection settings -->
+        <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
+        <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/mydb</property>
+        <property name="hibernate.connection.username">approject-admin</property>
+        <property name="hibernate.connection.password">approject</property>
+        
+        <!-- Connection pool settings -->
+        <property name="hibernate.connection.pool_size">5</property>
+        
+        <!-- PostgreSQL Dialect -->
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
+        
+        <!-- Session management -->
+        <property name="hibernate.current_session_context_class">thread</property>
+        
+        <!-- SQL logging -->
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+        
+        <!-- Schema update -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+        
+        <!-- Performance -->
+        <property name="hibernate.jdbc.batch_size">20</property>
+        <property name="hibernate.jdbc.timeout">30</property>
+        <property name="hibernate.connection.isolation">2</property>
+        
+        <!-- Caching -->
+        <property name="hibernate.cache.use_second_level_cache">false</property>
+        
+        <!-- Entity mappings (UPDATED to models package) -->
+        <mapping class="com.models.User"/>
+        <mapping class="com.models.Basket"/>
+        <mapping class="com.models.BasketItem"/>
+        <mapping class="com.models.Profile"/>
+        <mapping class="com.models.Food"/>
+        <mapping class="com.models.Order"/>
+        <mapping class="com.models.OrderItem"/>
+        <mapping class="com.models.OrderLogStatus"/>
+        <mapping class="com.models.Restaurant"/>
+        <mapping class="com.models.Review"/>
+        <mapping class="com.models.Wallet"/>
+    </session-factory>
+</hibernate-configuration>

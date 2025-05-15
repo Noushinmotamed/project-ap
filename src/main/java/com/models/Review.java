@@ -4,7 +4,7 @@ package com.models;
  * directly connected to User class and Food class for displaying sake
  */
 public class Review {
-    private long reviewId;
+    private Long reviewId;
     private int rating;
     private String text;
     private String imageUrl;

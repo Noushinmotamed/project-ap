@@ -42,5 +42,9 @@
         <mapping class="com.models.Restaurant"/>
         <mapping class="com.models.Review"/>
         <mapping class="com.models.Wallet"/>
+        <mapping class="com.models.CustomerProfile"/>
+        <mapping class="com.models.AdminProfile"/>
+        <mapping class="com.models.CourtierProfile"/>
+        <mapping class="com.models.OwnerProfile"/>
     </session-factory>
 </hibernate-configuration>

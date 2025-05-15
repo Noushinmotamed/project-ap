@@ -1,10 +1,28 @@
 package com.models;
+import jakarta.persistence.*;
 
-import java.util.ArrayList;
-
+/**
+ * the list of basketItems was removed. now each basket item holds the id of basket in it instead
+ * to avoid keeping basket object in each basketItem and oneToMany relation
+ */
+@Entity
+@Table(name = "baskets")
 public class Basket {
-    private ArrayList<BasketItem> basketItems;
-    private long basketId;
-    private long userId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long basketId;
+
+    @Column(unique = true, nullable = false)
+    private Long userId;
+
+    @Column( nullable = false)
     private double totalPrice;
+
+    public Basket() {}
+
+    public Basket(Long userId) {
+        this.userId = userId;
+        totalPrice = 0;
+
+    }
 }

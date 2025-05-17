@@ -11,10 +11,10 @@ public abstract class Profile {
     @Column( nullable = false)
     private Long userId;
 
-    @Column( nullable = false)
+    @Column( nullable = true)
     private String fullName;
 
-    @Column( nullable = false)
+    @Column( nullable = true, unique = true)
     private String phoneNumber;
 
     @Column( nullable =true)
@@ -39,5 +39,21 @@ public abstract class Profile {
     public void setAddress(String address) {
         this.address = address;
     }
+
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getFullName() { return fullName; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+
+    public String getAddress() { return address; }
+
+    public String getImageUrl() { return imageUrl; }
+
+
 
 }

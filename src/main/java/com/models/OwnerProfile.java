@@ -31,4 +31,14 @@ public class OwnerProfile extends Profile {
     public void setExplanation(String explanation) {
         this.explanation = explanation;
     }
+    public String getBankInfo() {
+        return bankInfo;
+    }
+    public String getBrandName() {
+        return brandName;
+    }
+    public String getExplanation() {
+        return explanation;
+    }
+
 }

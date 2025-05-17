@@ -1,22 +1,24 @@
 package com.httpHandler;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.models.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.util.HibernateUtil;
+import com.util.JwtUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.StandardCharsets;                                                              //should i return the profile object?
+
+import static com.httpHandler.ProfileHttpHandler.isValidNumber;
 
 public class UserHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         switch (exchange.getRequestMethod()) {
-            case "GET":
-                break;
             case "POST":
                 String path = exchange.getRequestURI().getPath();
 
@@ -29,10 +31,8 @@ public class UserHttpHandler implements HttpHandler {
                 }
 
                 break;
-            case "PUT":
-                break;
             case "DELETE":
-                break;
+                //handle log out here?
             default:
                 exchange.sendResponseHeaders(405, -1);  // Method Not Allowed
 
@@ -45,7 +45,7 @@ public class UserHttpHandler implements HttpHandler {
         User user = new Gson().fromJson(reader, User.class);
         if(!isValidEmail(user.getEmail()) || !isValidPhoneNumber(user.getPhoneNumber())) {
             String response = "invalid email or phone number";
-            exchange.sendResponseHeaders(405, response.getBytes().length);
+            exchange.sendResponseHeaders(406, response.getBytes().length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
             }
@@ -107,15 +107,29 @@ public class UserHttpHandler implements HttpHandler {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         User userToLogIn = new Gson().fromJson(reader, User.class);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            User foundUser = getUserByPhoneNumber(session,userToLogIn.getPhoneNumber());
-            if(foundUser== null || !userToLogIn.getPassword().equals(foundUser.getPassword()) ){
-                String response = "Invalid username or password!";
+            if(!isValidPhoneNumber(userToLogIn.getPhoneNumber())) {
+                String response = "Invalid phone number";
                 exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response.getBytes());
                 }
                 return;
-            } String response = "user logged in successfully!";
+            }
+            User foundUser = getUserByPhoneNumber(session,userToLogIn.getPhoneNumber());
+            if(foundUser== null || !userToLogIn.getPassword().equals(foundUser.getPassword()) ){
+                String response = "Invalid phone number or password!";
+                exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+                return;
+            }
+            String token = generateJwtToken(foundUser);
+              JsonObject jsonObject = new JsonObject();
+              jsonObject.addProperty("token", token);
+              jsonObject.addProperty("message","user logged in successfully!");
+              String response = new Gson().toJson(jsonObject);
+
             exchange.sendResponseHeaders(200, response.getBytes().length); // 200 OK
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
@@ -139,8 +153,8 @@ public class UserHttpHandler implements HttpHandler {
     private User getUserByPhoneNumber(Session session, String phoneNumber){
        return session.createQuery("from User where phoneNumber = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
     }
-    private boolean isValidEmail(String email){
-        if (email == null) {
+    public static boolean isValidEmail(String email){
+        if (email == null || email.isEmpty()) {
             return true;
         }
         return email.contains("@") && email.contains(".");
@@ -150,21 +164,11 @@ public class UserHttpHandler implements HttpHandler {
      *
      * input format for phone number : [+98][user input example : 9194772344]
      */
-    private boolean isValidPhoneNumber(String phoneNumber){
-        if (phoneNumber == null) {
-            return false;
-        }else if(phoneNumber.length() == 10){
-            try {
-                Double.parseDouble(phoneNumber);
-                return true;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }else{
-            return false;
-
-
+    public boolean isValidPhoneNumber(String phoneNumber){
+        return isValidNumber(phoneNumber);
     }
+    private String generateJwtToken(User user) {
+        return JwtUtil.generateToken(user.getId().toString());
     }
 }
 
@@ -187,3 +191,4 @@ public class UserHttpHandler implements HttpHandler {
 //int HTTP_NOT_ACCEPTABLE = 406;
 //int HTTP_PROXY_AUTH_REQUIRED = 407;
 //int HTTP_REQUEST_TIMEOUT = 408;
+//GET POST PUT DELETE

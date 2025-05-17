@@ -11,7 +11,7 @@ import java.util.Objects;
 @Table(name = "users")
 public class User {
 
-    @Column( nullable = false)
+    @Column( nullable = true)
     private String fullName;
 
     @Column(unique = true, nullable = false)
@@ -73,9 +73,12 @@ public class User {
     public String getFullName() {
         return fullName;
     }
-
     public String getAddress() {
         return address;
     }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setEmail(String email) { this.email = email; }
+    public void setPassword(String password) { this.password = password; }
 }
 

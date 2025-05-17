@@ -19,4 +19,16 @@ public class CourtierProfile extends Profile {
         super(id, fullName, phoneNumber);
         status = CourtierStatus.AVAILABLE;
     }
+    public String getBankInfo() {
+        return bankInfo;
+    }
+    public CourtierStatus getStatus() {
+        return status;
+    }
+    public void setBankInfo(String bankInfo) {
+        this.bankInfo = bankInfo;
+    }
+    public void setStatus(CourtierStatus status) {
+        this.status = status;
+    }
 }

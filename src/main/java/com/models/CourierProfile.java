@@ -6,29 +6,29 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table( name = "courtierprofiles")
-public class CourtierProfile extends Profile {
+public class CourierProfile extends Profile {
 
     @Column
     private String bankInfo;
 
     @Column
-    private CourtierStatus status;
+    private CourierStatus status;
 
-    public CourtierProfile() {}
-    public CourtierProfile(Long id, String fullName, String phoneNumber) {
+    public CourierProfile() {}
+    public CourierProfile(Long id, String fullName, String phoneNumber) {
         super(id, fullName, phoneNumber);
-        status = CourtierStatus.AVAILABLE;
+        status = CourierStatus.AVAILABLE;
     }
     public String getBankInfo() {
         return bankInfo;
     }
-    public CourtierStatus getStatus() {
+    public CourierStatus getStatus() {
         return status;
     }
     public void setBankInfo(String bankInfo) {
         this.bankInfo = bankInfo;
     }
-    public void setStatus(CourtierStatus status) {
+    public void setStatus(CourierStatus status) {
         this.status = status;
     }
 }

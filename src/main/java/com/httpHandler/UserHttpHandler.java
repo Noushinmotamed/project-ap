@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;                                                              //should i return the profile object?
 
 import static com.httpHandler.ProfileHttpHandler.isValidNumber;
+import static com.util.JwtUtil.addToInvalid;
 
 public class UserHttpHandler implements HttpHandler {
     @Override
@@ -22,17 +23,17 @@ public class UserHttpHandler implements HttpHandler {
             case "POST":
                 String path = exchange.getRequestURI().getPath();
 
-                if (path.equals("/user/signup")) {
+                if (path.equals("/auth/register")) {
                     handleSignup(exchange);
-                } else if (path.equals("/user/login")) {
+                } else if (path.equals("/auth/login")) {
                     handleLogin(exchange);
-                } else {
+                } else if(path.equals("/auth/logout")) {
+                      handleLogout(exchange);
+                }else{
                     exchange.sendResponseHeaders(404, -1); // Not Found
                 }
 
                 break;
-            case "DELETE":
-                //handle log out here?
             default:
                 exchange.sendResponseHeaders(405, -1);  // Method Not Allowed
 
@@ -43,9 +44,11 @@ public class UserHttpHandler implements HttpHandler {
     private void handleSignup(HttpExchange exchange) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         User user = new Gson().fromJson(reader, User.class);
-        if(!isValidEmail(user.getEmail()) || !isValidPhoneNumber(user.getPhoneNumber())) {
-            String response = "invalid email or phone number";
-            exchange.sendResponseHeaders(406, response.getBytes().length);
+        if(!isValidEmail(user.getEmail()) || !isValidPhoneNumber(user.getPhone())) {
+            String response = "{\"error\":\"Invalid input data\"}";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(400, responseBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
             }
@@ -54,42 +57,52 @@ public class UserHttpHandler implements HttpHandler {
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            if (isPhoneNumberTaken(session, user.getPhoneNumber())) {
-                String response = "Username is already taken!";
-                exchange.sendResponseHeaders(400, response.getBytes().length); // 400 Bad Request
+            if (isPhoneNumberTaken(session, user.getPhone())) {
+                String response = "{\"error\":\"Phone number already exists\"}";
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+
+
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(409, responseBytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response.getBytes());
                 }
                 return;
             }                                                                      //save user directly to db,also create basket,profile and wallet
 
+
+         if(user.getRole() == Role.seller || user.getRole() == Role.courier) {
+                 if(user.getBankInfo()!= null && (user.getBankInfo().getBankName()== null || user.getBankInfo().getBankName().isEmpty() || user.getBankInfo().getAccountNumber()== null || user.getBankInfo().getAccountNumber().isEmpty())){
+                    String response = "{\"error\":\"bank name or account number is empty\"}";
+                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response.getBytes());
+                    }
+                    return;
+                }
+            }else{
+             user.setBankInfo(null);
+         }
             session.save(user);
-            switch(user.getRole()){
-                case CUSTOMER:
-                    Profile profile = new CustomerProfile(user.getAddress(),user.getId(), user.getFullName(), user.getPhoneNumber());
-                    Basket basket = new Basket(user.getId());
-                    Wallet wallet = new Wallet(user.getId());
-                    session.save(profile);
-                    session.save(basket);
-                    session.save(wallet);
-                    break;
-                case OWNER:
-                    Profile ownerProfile = new OwnerProfile(user.getAddress(),user.getId(), user.getFullName(), user.getPhoneNumber());
-                    session.save(ownerProfile);
-                    break;
-                    case ADMIN:
-                        Profile adminProfile = new AdminProfile(user.getId(), user.getFullName(), user.getPhoneNumber());
-                        session.save(adminProfile);
-                        break;
-                        case COURTIER:
-                            Profile courtierProfile = new CourtierProfile(user.getId(), user.getFullName(), user.getPhoneNumber());
-                            session.save(courtierProfile);
-                            System.out.println("Saving CourtierProfile for user: " + user.getFullName());
-                            break;
+            if(user.getRole() == Role.buyer) {
+                Basket basket = new Basket(user.getId());
+                Wallet wallet = new Wallet(user.getId());
+                session.save(basket);
+                session.save(wallet);
             }
+
             transaction.commit();
-            String response = "User has been signed up successfully!";
-            exchange.sendResponseHeaders(200, response.getBytes().length);
+            String token = generateJwtToken(user);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("message","User registered successfully");
+            jsonObject.addProperty("userId", user.getId());
+            jsonObject.addProperty("token", token);
+            String response = new Gson().toJson(jsonObject);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, responseBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
             }
@@ -105,34 +118,55 @@ public class UserHttpHandler implements HttpHandler {
     }
     private void handleLogin(HttpExchange exchange) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
-        User userToLogIn = new Gson().fromJson(reader, User.class);
+        JsonObject userToLogIn = new Gson().fromJson(reader, JsonObject.class);
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            if(!isValidPhoneNumber(userToLogIn.getPhoneNumber())) {
-                String response = "Invalid phone number";
-                exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
-                return;
-            }
-            User foundUser = getUserByPhoneNumber(session,userToLogIn.getPhoneNumber());
-            if(foundUser== null || !userToLogIn.getPassword().equals(foundUser.getPassword()) ){
-                String response = "Invalid phone number or password!";
-                exchange.sendResponseHeaders(401, response.getBytes().length); // 401 Unauthorized
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
-                return;
-            }
-            String token = generateJwtToken(foundUser);
-              JsonObject jsonObject = new JsonObject();
-              jsonObject.addProperty("token", token);
-              jsonObject.addProperty("message","user logged in successfully!");
-              String response = new Gson().toJson(jsonObject);
+            if(!userToLogIn.has("phone") || !isValidPhoneNumber(userToLogIn.get("phone").getAsString()) || !userToLogIn.has("password")){
+                String response = "{\"error\":\"Invalid phone or password\"}";
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
 
-            exchange.sendResponseHeaders(200, response.getBytes().length); // 200 OK
+
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+                return;
+            }
+            User foundUser = getUserByPhoneNumber(session,userToLogIn.get("phone").getAsString());
+            if(foundUser== null || !userToLogIn.get("password").getAsString().equals(foundUser.getPassword()) ){
+                String response = "{\"error\":\"Invalid phone or password\"}";
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+
+
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+                return;
+            }
+
+            String token = generateJwtToken(foundUser);
+
+            JsonObject responseJson = new JsonObject();
+            responseJson.addProperty("message", "User logged in successfully");
+            responseJson.addProperty("token", token);
+
+            JsonObject userJson = new JsonObject();
+            userJson.addProperty("id", foundUser.getId().toString());
+            userJson.addProperty("fullName", foundUser.getFullName());
+            userJson.addProperty("role", foundUser.getRole().toString());
+            responseJson.add("user", userJson);
+
+            String responseBody = new Gson().toJson(responseJson);
+            byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, responseBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                os.write(responseBytes);
+            }
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(responseBytes);
             }
 
         } catch (Exception e) {
@@ -144,14 +178,64 @@ public class UserHttpHandler implements HttpHandler {
             }
         }
     }
+    private void handleLogout(HttpExchange exchange) throws IOException {
+        String token = exchange.getRequestHeaders().getFirst("Authorization");
+        if (token == null || token.isEmpty()) {
+            String response = "{\"error\":\"Unauthorized\"}";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
+        String id = JwtUtil.validateToken(token);
+        if (id == null) {
+            String response = "{\"error\":\"Unauthorized\"}";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
+        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            Long userId = Long.valueOf(id);
+            User user = session.get(User.class, userId);
+            if (user == null) {
+                exchange.sendResponseHeaders(404, -1); // Not Found
+                return;
+            }
+            JwtUtil.addToInvalid(token);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("message","User logged out successfully");
+            String response = new Gson().toJson(jsonObject);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+
+
+
+        }catch(Exception e){
+            exchange.sendResponseHeaders(500, -1);
+            e.printStackTrace();
+        }
+
+    }
     private boolean isPhoneNumberTaken(Session session, String phoneNumber){
-        User user = session.createQuery("from User where phoneNumber = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
+        User user = session.createQuery("from User where phone = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
         return user!=null ;
 
 
     }
     private User getUserByPhoneNumber(Session session, String phoneNumber){
-       return session.createQuery("from User where phoneNumber = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
+       return session.createQuery("from User where phone = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
     }
     public static boolean isValidEmail(String email){
         if (email == null || email.isEmpty()) {
@@ -170,6 +254,7 @@ public class UserHttpHandler implements HttpHandler {
     private String generateJwtToken(User user) {
         return JwtUtil.generateToken(user.getId().toString());
     }
+
 }
 
 

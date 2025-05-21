@@ -1,8 +1,5 @@
 package com.httpHandler;
 
-import com.controller.CourtierProfileDTO;
-import com.controller.OwnerProfileDTO;
-import com.controller.ProfileDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.models.*;
@@ -25,26 +22,36 @@ public class ProfileHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String token = exchange.getRequestHeaders().getFirst("Authorization");
-
         if (token == null || token.isEmpty()) {
-            exchange.sendResponseHeaders(401, -1); // Unauthorized
+            String response = "{\"error\":\"Unauthorized\"}";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
             return;
         }
-
         String id = JwtUtil.validateToken(token);
         if (id == null) {
-            exchange.sendResponseHeaders(401, -1); // Unauthorized
+            String response = "{\"error\":\"Unauthorized\"}";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
             return;
         }
         String path = exchange.getRequestURI().getPath();
         String method = exchange.getRequestMethod();
 
-        if (path.equals("/profile")) {
+        if (path.equals("/auth/profile")) {
             switch (method) {
                 case "GET":
                     handleGetProfile(exchange, id);
                     break;
-                case "PATCH":
+                case "PUT":
                     handleUpdateProfile(exchange, id);
                     break;
 
@@ -68,14 +75,33 @@ public class ProfileHttpHandler implements HttpHandler {
                 return;
             }
 
-            ProfileDTO profileDTO=createDTOProfile(user,session,userId);
 
-            String response = new Gson().toJson(profileDTO);
+            JsonObject response = new JsonObject();
+            response.addProperty("id", user.getId().toString());
+            response.addProperty("fullName", user.getFullName());
+            response.addProperty("phone", user.getPhone());
+            response.addProperty("email", user.getEmail());
+            response.addProperty("role", user.getRole().toString().toLowerCase());
+            response.addProperty("address", user.getAddress());
+            response.addProperty("profileImageUrl", user.getImageBase64());
+
+
+            if (user.getBankInfo() != null) {
+                JsonObject bankInfo = new JsonObject();
+                bankInfo.addProperty("bankName", user.getBankInfo().getBankName());
+                bankInfo.addProperty("accountNumber", user.getBankInfo().getAccountNumber());
+                response.add("bankInfo", bankInfo);
+            }
+
+
+            String responseBody = new Gson().toJson(response);
+
+
+            byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
-
+            exchange.sendResponseHeaders(200, responseBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes(StandardCharsets.UTF_8));
+                os.write(responseBytes);
             }
 
 
@@ -97,56 +123,79 @@ public class ProfileHttpHandler implements HttpHandler {
                 exchange.sendResponseHeaders(404, -1);  // not found
                 return;
             }
-            Profile profile = getProfileByRole(session, user);
+
             if (updatedProfile.has("fullName")) {
-                profile.setFullName(updatedProfile.get("fullName").getAsString());
                 user.setFullName(updatedProfile.get("fullName").getAsString());
             }
-            if (updatedProfile.has("phoneNumber")) {
-                String number = updatedProfile.get("phoneNumber").getAsString();
-                if (!number.equals(profile.getPhoneNumber()) && !isValidNumber(number, session)) {
-
-                    exchange.sendResponseHeaders(401, -1);
-                    return;
-                } else {
-                    profile.setPhoneNumber(number);
-                    user.setPhoneNumber(number);
-                }
-            }
+//            if (updatedProfile.has("phone")) {
+//                String number = updatedProfile.get("phone").getAsString();
+//                if (!isValidNumber(number, session)) {
+//
+//                    String response = "{\"error\":\"Unauthorized\"}";
+//                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+//                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+//                    exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+//                    try (OutputStream os = exchange.getResponseBody()) {
+//                        os.write(response.getBytes());
+//                    }
+//                    return;
+//                } else {
+//                    user.setPhone(number);
+//                }
+//            }
             if (updatedProfile.has("address")) {
-                profile.setAddress(updatedProfile.get("address").getAsString());
                 user.setAddress(updatedProfile.get("address").getAsString());
             }
-            if (updatedProfile.has("imageUrl")) profile.setImageUrl(updatedProfile.get("imageUrl").getAsString());
-            switch(user.getRole()){
-                    case OWNER:
-                        if(updatedProfile.has("bankInfo")) ((OwnerProfile)profile).setBankInfo(updatedProfile.get("bankInfo").getAsString());
-                        if(updatedProfile.has("brandName")) ((OwnerProfile)profile).setBrandName(updatedProfile.get("brandName").getAsString());
-                        if(updatedProfile.has("explanation")) ((OwnerProfile)profile).setExplanation(updatedProfile.get("explanation").getAsString());
-                        break;
-                            case COURTIER:
-                                if(updatedProfile.has("bankInfo")) ((CourtierProfile)profile).setBankInfo(updatedProfile.get("bankInfo").getAsString());
-                                if(updatedProfile.has("courtierStatus")) ((CourtierProfile)profile).setStatus(CourtierStatus.valueOf(updatedProfile.get("courtierStatus").getAsString().toUpperCase()));
-                                break;
+            if(updatedProfile.has("bankInfo") && !updatedProfile.get("bankInfo").isJsonNull() && (user.getRole().toString().equalsIgnoreCase("seller") || user.getRole().toString().equalsIgnoreCase("courier"))) {
+                JsonObject bankInfoJson = updatedProfile.getAsJsonObject("bankInfo");
+
+                // Create or update BankInfo object
+                BankInfo bankInfo = user.getBankInfo() != null ? user.getBankInfo() : new BankInfo();
+
+                // Set fields with null checks
+                if (bankInfoJson.has("bankName")) {
+                    bankInfo.setBankName(bankInfoJson.get("bankName").getAsString());
+                }
+                if (bankInfoJson.has("accountNumber")) {
+                    bankInfo.setAccountNumber(bankInfoJson.get("accountNumber").getAsString());
+                }
+
+                user.setBankInfo(bankInfo);
             }
-            ProfileDTO profileDTO=createDTOProfile(user,session,userId);
+            if (updatedProfile.has("profileImageBase64")) user.setImageBase64(updatedProfile.get("profileImageBase64").getAsString());
+          if(user.getRole().toString().toLowerCase().equals("owner")) {
+
+                        if(updatedProfile.has("brandName")) user.setBrandName(updatedProfile.get("brandName").getAsString());
+                        if(updatedProfile.has("explanation")) user.setExplanation(updatedProfile.get("explanation").getAsString());
+
+
+            }
+
             if(updatedProfile.has("email") && isValidEmail(updatedProfile.get("email").getAsString())){
-                profileDTO.setEmail(updatedProfile.get("email").getAsString());
                 user.setEmail(updatedProfile.get("email").getAsString());
-            }else if(!isValidEmail(updatedProfile.get("email").getAsString())){
-                exchange.sendResponseHeaders(401, -1);
+            }else if(updatedProfile.has("email") && !isValidEmail(updatedProfile.get("email").getAsString())){
+                String response = "{\"error\":\"Invalid profile data\"}";
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(400, responseBytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
                 return;
             }
-            session.saveOrUpdate(profile);
+            session.saveOrUpdate(user);
             tx.commit();
 
-
-            String response = new Gson().toJson(profileDTO);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("message","Profile updated successfully");
+            String response = new Gson().toJson(jsonObject);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, responseBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes(StandardCharsets.UTF_8));
+                os.write(response.getBytes());
             }
+
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -154,32 +203,13 @@ public class ProfileHttpHandler implements HttpHandler {
         }
     }
 
-    private Profile getProfileByRole(Session session, User user) {
-        Profile profile = null;
-        switch (user.getRole()) {
 
-            case ADMIN:
-                profile = session.createQuery("from AdminProfile where userId = :userId", AdminProfile.class).setParameter("userId", user.getId()).getSingleResult();
-                break;
-            case OWNER:
-                profile = session.createQuery("from OwnerProfile where userId = :userId", OwnerProfile.class).setParameter("userId", user.getId()).getSingleResult();
-                break;
-            case CUSTOMER:
-                profile = session.createQuery("from CustomerProfile where userId = :userId", CustomerProfile.class).setParameter("userId", user.getId()).getSingleResult();
-                break;
-            case COURTIER:
-                profile = session.createQuery("from CourtierProfile where userId = :userId", CourtierProfile.class).setParameter("userId", user.getId()).getSingleResult();
-                break;
-
-        }
-        return profile;
-    }
 
     private boolean isValidNumber(String number, Session session) {
         if(isValidNumber(number)) {
             try {
                 Long count = session.createQuery(
-                                "SELECT COUNT(u) FROM User u WHERE u.phoneNumber = :phoneNumber",
+                                "SELECT COUNT(u) FROM User u WHERE u.phone = :phoneNumber",
                                 Long.class)
                         .setParameter("phoneNumber", number)
                         .getSingleResult();
@@ -206,62 +236,10 @@ public class ProfileHttpHandler implements HttpHandler {
 
         }
     }
-    private ProfileDTO createDTOProfile(User user,Session session,Long userId) {
-        Profile profile = null;
-        ProfileDTO profileDTO = null;
-        switch (user.getRole()) {
-            case ADMIN:
-                profile = session.createQuery("from AdminProfile where userId = :userId", AdminProfile.class).setParameter("userId", userId).getSingleResult();
-                profileDTO = new ProfileDTO(
-                        profile.getFullName(),
-                        profile.getPhoneNumber(),
-                        profile.getAddress(),
-                        profile.getImageUrl(),
-                        user.getEmail()
-                );
-                break;
-            case OWNER:
-                profile = session.createQuery("from OwnerProfile where userId = :userId", OwnerProfile.class).setParameter("userId", userId).getSingleResult();
-                profileDTO = new OwnerProfileDTO(
-                        profile.getFullName(),
-                        profile.getPhoneNumber(),
-                        profile.getAddress(),
-                        profile.getImageUrl(),
-                        user.getEmail(),
-                        ((OwnerProfile) profile).getBankInfo(),
-                        ((OwnerProfile) profile).getBrandName(),
-                        ((OwnerProfile) profile).getExplanation()
-                );
 
-                break;
-            case CUSTOMER:
-                profile = session.createQuery("from CustomerProfile where userId = :userId", CustomerProfile.class).setParameter("userId", userId).getSingleResult();
-                profileDTO = new ProfileDTO(
-                        profile.getFullName(),
-                        profile.getPhoneNumber(),
-                        profile.getAddress(),
-                        profile.getImageUrl(),
-                        user.getEmail()
-                );
-                break;
-            case COURTIER:
-                profile = session.createQuery("from CourtierProfile where userId = :userId", CourtierProfile.class).setParameter("userId", userId).getSingleResult();
-                profileDTO = new CourtierProfileDTO(
-                        profile.getFullName(),
-                        profile.getPhoneNumber(),
-                        profile.getAddress(),
-                        profile.getImageUrl(),
-                        user.getEmail(),
-                        ((CourtierProfile) profile).getBankInfo(),
-                        ((CourtierProfile) profile).getStatus()
-                );
-                break;
-        }
-        return profileDTO;
-
-    }
     public boolean isValidEmail(String email) {
         return UserHttpHandler.isValidEmail(email);
     }
 
 }
+

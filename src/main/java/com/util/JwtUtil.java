@@ -6,13 +6,19 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 import java.security.Key;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class JwtUtil {
 
     private static final String SECRET = "bXktdXJsLXNlY3JldC1rZXktdGhhdC1pcy1iYXNlNjQtZW5jb2RlZA=="; // Example: "my-url-secret-key-that-is-base64-encoded"
     private static final Key key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
     private static final long EXPIRATION_MS = 3 * 60 * 60 * 1000;
+    private static final Set<String> invalidTokenList=  Collections.synchronizedSet(new HashSet<>());
+
+
 
     public static String generateToken(String username) {
         return Jwts.builder()
@@ -24,7 +30,7 @@ public class JwtUtil {
     }
 
     public static String validateToken(String token) {
-        if (token == null || token.isBlank()) {
+        if (token == null || token.isBlank() || invalidTokenList.contains(token)) {
             return null;
         }
 
@@ -49,5 +55,8 @@ public class JwtUtil {
 
     public static Key getKey() {
         return key;
+    }
+    public static void addToInvalid(String token) {
+        invalidTokenList.add(token);
     }
 }

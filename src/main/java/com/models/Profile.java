@@ -15,7 +15,7 @@ public abstract class Profile {
     private String fullName;
 
     @Column( nullable = true, unique = true)
-    private String phoneNumber;
+    private String phone;
 
     @Column( nullable =true)
     private String imageUrl;
@@ -23,17 +23,20 @@ public abstract class Profile {
     @Column( nullable = true, unique = false)
     private String address;
 
+    @Column
+    private String email;
+
     public Profile() {}
-    public Profile(Long userId, String fullName, String phoneNumber) {
+    public Profile(Long userId, String fullName, String phone) {
         this.userId = userId;
         this.fullName = fullName;
-        this.phoneNumber = phoneNumber;
+        this.phone = phone;
 
     }
-    public Profile(Long userId, String fullName, String phoneNumber,String address) {
+    public Profile(Long userId, String fullName, String phone, String address) {
         this.userId = userId;
         this.fullName = fullName;
-        this.phoneNumber = phoneNumber;
+        this.phone = phone;
         this.address = address;
     }
     public void setAddress(String address) {
@@ -42,13 +45,13 @@ public abstract class Profile {
 
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setPhone(String phoneNumber) { this.phone = phoneNumber; }
 
     public void setFullName(String fullName) { this.fullName = fullName; }
 
     public String getFullName() { return fullName; }
 
-    public String getPhoneNumber() { return phoneNumber; }
+    public String getPhone() { return phone; }
 
     public String getAddress() { return address; }
 

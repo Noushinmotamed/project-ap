@@ -44,7 +44,7 @@
         <mapping class="com.models.Wallet"/>
         <mapping class="com.models.CustomerProfile"/>
         <mapping class="com.models.AdminProfile"/>
-        <mapping class="com.models.CourtierProfile"/>
+        <mapping class="com.models.CourierProfile"/>
         <mapping class="com.models.OwnerProfile"/>
     </session-factory>
 </hibernate-configuration>

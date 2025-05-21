@@ -1,5 +1,5 @@
 package com.models;
 
-public enum CourtierStatus {
+public enum CourierStatus {
     UNAVAILABLE,AVAILABLE;
 }

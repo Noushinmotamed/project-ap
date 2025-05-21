@@ -16,31 +16,17 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;                                                      //BUGGED!! : GET STILL FETCHES PROFILE WITH OLD PHONE NUMBER TOO . Handle email in Update!!
 
+import static com.httpHandler.WalletHttpHandler.unauthorized;
+
 
 public class ProfileHttpHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String token = exchange.getRequestHeaders().getFirst("Authorization");
-        if (token == null || token.isEmpty()) {
-            String response = "{\"error\":\"Unauthorized\"}";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
-            return;
-        }
         String id = JwtUtil.validateToken(token);
         if (id == null) {
-            String response = "{\"error\":\"Unauthorized\"}";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
+            unauthorized(exchange);
             return;
         }
         String path = exchange.getRequestURI().getPath();
@@ -205,21 +191,21 @@ public class ProfileHttpHandler implements HttpHandler {
 
 
 
-    private boolean isValidNumber(String number, Session session) {
-        if(isValidNumber(number)) {
-            try {
-                Long count = session.createQuery(
-                                "SELECT COUNT(u) FROM User u WHERE u.phone = :phoneNumber",
-                                Long.class)
-                        .setParameter("phoneNumber", number)
-                        .getSingleResult();
-
-                return count == 0; // True if number doesn't exist
-            } catch (NoResultException e) {
-                return true; // No users found with this number
-            }
-        }else return false;
-    }
+//    private boolean isValidNumber(String number, Session session) {
+//        if(isValidNumber(number)) {
+//            try {
+//                Long count = session.createQuery(
+//                                "SELECT COUNT(u) FROM User u WHERE u.phone = :phoneNumber",
+//                                Long.class)
+//                        .setParameter("phoneNumber", number)
+//                        .getSingleResult();
+//
+//                return count == 0; // True if number doesn't exist
+//            } catch (NoResultException e) {
+//                return true; // No users found with this number
+//            }
+//        }else return false;
+//    }
 
     static boolean isValidNumber(String number) {
         if (number == null) {

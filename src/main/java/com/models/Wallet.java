@@ -21,4 +21,7 @@ public class Wallet {
         this.userId = userId;
         this.balance = 0;
     }
+    public void addAmount(double amount) {
+        this.balance += amount;
+    }
 }

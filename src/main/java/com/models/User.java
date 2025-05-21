@@ -59,6 +59,7 @@ public class User {
         this.profileImageBase64 = profileImageBase64;
         this.role = Objects.requireNonNull(role);
         this.bankInfo = bankInfo;
+        if(role == Role.courier) { courierStatus = CourierStatus.AVAILABLE; }
 
     }
 

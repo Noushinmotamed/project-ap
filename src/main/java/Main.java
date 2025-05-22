@@ -1,7 +1,5 @@
 
-import com.httpHandler.WalletHttpHandler;
-import com.httpHandler.ProfileHttpHandler;
-import com.httpHandler.UserHttpHandler;
+import com.httpHandler.*;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 public class Main {
@@ -13,6 +11,7 @@ public class Main {
         server.createContext("/auth/logout", new UserHttpHandler());
         server.createContext("/auth/profile", new ProfileHttpHandler());
         server.createContext("/wallet/top-up", new WalletHttpHandler());
+        server.createContext("/payment/online", new PaymentHttpHandler());
         server.start();
         System.out.println("Server started on port 8080...");
     }

@@ -13,7 +13,7 @@
         <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
         
         <!-- Session management -->
-        <property name="hibernate.current_session_context_class">thread</property>
+        <property name="hibernate.current_session_context_class">org.hibernate.context.internal.ThreadLocalSessionContext</property>
         
         <!-- SQL logging -->
         <property name="hibernate.show_sql">true</property>
@@ -34,7 +34,6 @@
         <mapping class="com.models.User"/>
         <mapping class="com.models.Basket"/>
         <mapping class="com.models.BasketItem"/>
-        <mapping class="com.models.Profile"/>
         <mapping class="com.models.Food"/>
         <mapping class="com.models.Order"/>
         <mapping class="com.models.OrderItem"/>
@@ -42,9 +41,6 @@
         <mapping class="com.models.Restaurant"/>
         <mapping class="com.models.Review"/>
         <mapping class="com.models.Wallet"/>
-        <mapping class="com.models.CustomerProfile"/>
-        <mapping class="com.models.AdminProfile"/>
-        <mapping class="com.models.CourierProfile"/>
-        <mapping class="com.models.OwnerProfile"/>
+        <mapping class="com.models.Notification"/>
     </session-factory>
 </hibernate-configuration>

@@ -165,9 +165,7 @@ public class UserHttpHandler implements HttpHandler {
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(responseBytes);
             }
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(responseBytes);
-            }
+
 
         } catch (Exception e) {
             e.printStackTrace();

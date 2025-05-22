@@ -1,10 +1,27 @@
 package com.models;
 
-public class OrderItem {
-    private Long foodId;
-    private Long orderId;
-    private String foodName;
-    private double finalPrice;
-    private int quantity;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "orderItems")
+public class OrderItem {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long orderItemId; // Primary key
+
+    @Column(nullable = false)
+    private Long foodId;
+
+    @ManyToOne
+    @JoinColumn(name = "orderId")
+    private Order order;
+
+    @Column(nullable = false)
+    private String foodName;
+
+    @Column(nullable = false)
+    private double finalPrice;
+
+    @Column(nullable = false)
+    private int quantity;
 }

@@ -24,4 +24,12 @@ public class Wallet {
     public void addAmount(double amount) {
         this.balance += amount;
     }
+    public boolean removeAmount(double amount) {
+        if(balance - amount >= 0) {
+            this.balance -= amount;
+            return true;
+        }else{
+            return false;
+        }
+    }
 }

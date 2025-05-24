@@ -1,4 +1,5 @@
 package com.models;
+import com.google.gson.annotations.SerializedName;
 import jakarta.persistence.*;
 import java.util.Objects;
 /**
@@ -7,11 +8,13 @@ import java.util.Objects;
  * email in optional so it could be null
  * id will be created by db
  */
+                            // JAVA NAMES NOT MATCHING JSON? SERIALIZE !!!
 @Entity
 @Table(name = "users")
 public class User {
 
     @Column( nullable = false)
+    @SerializedName( "full_name")
     private String fullName;
 
     @Column(unique = true, nullable = false)
@@ -40,9 +43,11 @@ public class User {
     private String profileImageBase64;
 
     @Embedded
+    @SerializedName("bank_info")
     private BankInfo bankInfo;
 
     @Column
+    @SerializedName("brand_name")
     private String brandName;                      //only for owner
      @Column
     private String explanation;                     //only for owner

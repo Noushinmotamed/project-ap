@@ -30,12 +30,22 @@ public class UserHttpHandler implements HttpHandler {
                 } else if(path.equals("/auth/logout")) {
                       handleLogout(exchange);
                 }else{
-                    exchange.sendResponseHeaders(404, -1); // Not Found
+                    String response = "not_found";
+                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                    exchange.sendResponseHeaders(404, responseBytes.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(responseBytes);
+                    }
                 }
 
                 break;
             default:
-                exchange.sendResponseHeaders(405, -1);  // Method Not Allowed
+                String response = "method_not_allowed";
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(405, responseBytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(responseBytes);
+                }
 
         }
 
@@ -44,13 +54,31 @@ public class UserHttpHandler implements HttpHandler {
     private void handleSignup(HttpExchange exchange) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         User user = new Gson().fromJson(reader, User.class);
-        if(!isValidEmail(user.getEmail()) || !isValidPhoneNumber(user.getPhone())) {
-            String response = "{\"error\":\"Invalid input data\"}";
+        if(user.getRole() ==null || user.getPassword() == null || user.getAddress() == null || user.getFullName() == null || user.getRole()== null){
+            String response = "Invalid_input";
             byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(400, responseBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                os.write(responseBytes);
+            }
+            return;
+        }try{
+            Role.valueOf(user.getRole().toString());
+        }catch(IllegalArgumentException e){
+            String response = "Invalid_input";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(400, responseBytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(responseBytes);
+            }
+            return;
+        }
+        if(!isValidEmail(user.getEmail()) || !isValidPhoneNumber(user.getPhone())) {
+            String response = "Invalid_input";
+            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(400, responseBytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(responseBytes);
             }
             return;
 
@@ -60,8 +88,6 @@ public class UserHttpHandler implements HttpHandler {
             if (isPhoneNumberTaken(session, user.getPhone())) {
                 String response = "{\"error\":\"Phone number already exists\"}";
                 byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-
-
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(409, responseBytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
@@ -73,14 +99,13 @@ public class UserHttpHandler implements HttpHandler {
 
          if(user.getRole() == Role.seller || user.getRole() == Role.courier) {
                  if(user.getBankInfo()!= null && (user.getBankInfo().getBankName()== null || user.getBankInfo().getBankName().isEmpty() || user.getBankInfo().getAccountNumber()== null || user.getBankInfo().getAccountNumber().isEmpty())){
-                    String response = "{\"error\":\"bank name or account number is empty\"}";
-                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(response.getBytes());
-                    }
-                    return;
+                     String response = "Invalid_input";
+                     byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                     exchange.sendResponseHeaders(400, responseBytes.length);
+                     try (OutputStream os = exchange.getResponseBody()) {
+                         os.write(responseBytes);
+                     }
+                     return;
                 }
             }else{
              user.setBankInfo(null);
@@ -109,7 +134,7 @@ public class UserHttpHandler implements HttpHandler {
 
         }catch (Exception e) {
             e.printStackTrace();
-            String response = "Failed to create user";
+            String response = "internal_server_error";
             exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
@@ -119,27 +144,22 @@ public class UserHttpHandler implements HttpHandler {
     private void handleLogin(HttpExchange exchange) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         JsonObject userToLogIn = new Gson().fromJson(reader, JsonObject.class);
+
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             if(!userToLogIn.has("phone") || !isValidPhoneNumber(userToLogIn.get("phone").getAsString()) || !userToLogIn.has("password")){
-                String response = "{\"error\":\"Invalid phone or password\"}";
+                String response = "Invalid_input";
                 byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-
-
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+                exchange.sendResponseHeaders(400, responseBytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
+                    os.write(responseBytes);
                 }
                 return;
             }
             User foundUser = getUserByPhoneNumber(session,userToLogIn.get("phone").getAsString());
             if(foundUser== null || !userToLogIn.get("password").getAsString().equals(foundUser.getPassword()) ){
-                String response = "{\"error\":\"Invalid phone or password\"}";
+                String response = "{\"error\":\"invalid_input\"}";
                 byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-
-
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
+                exchange.sendResponseHeaders(400, responseBytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response.getBytes());
                 }
@@ -167,9 +187,9 @@ public class UserHttpHandler implements HttpHandler {
             }
 
 
-        } catch (Exception e) {
+        }catch (Exception e) {
             e.printStackTrace();
-            String response = "Failed to login";
+            String response = "internal_server_error";
             exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
@@ -181,7 +201,6 @@ public class UserHttpHandler implements HttpHandler {
         if (token == null || token.isEmpty()) {
             String response = "{\"error\":\"Unauthorized\"}";
             byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
@@ -192,7 +211,6 @@ public class UserHttpHandler implements HttpHandler {
         if (id == null) {
             String response = "{\"error\":\"Unauthorized\"}";
             byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
@@ -244,10 +262,10 @@ public class UserHttpHandler implements HttpHandler {
 
     /**
      *
-     * input format for phone number : [+98][user input example : 9194772344]
+     * input format for phone number : [user input example : 09194772344]
      */
     public boolean isValidPhoneNumber(String phoneNumber){
-        return isValidNumber(phoneNumber);
+    return isValidNumber(phoneNumber);
     }
     private String generateJwtToken(User user) {
         return JwtUtil.generateToken(user.getId().toString());

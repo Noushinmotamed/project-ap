@@ -16,5 +16,13 @@ public class HttpUtil {
             os.flush();
 
         }
+
     }
+    public static void sendSimpleResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
+    }
+
 }

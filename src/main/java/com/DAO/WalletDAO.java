@@ -14,7 +14,7 @@ public class WalletDAO {
             Wallet wallet = session.createQuery("from Wallet where userId = :id", Wallet.class).setParameter("id", id).uniqueResult();
 
             if(wallet == null) {
-                return "{ \"error\": \"Not Found\" }";
+                return "{ \"error\": \"Request not found\" }";
             }
             wallet.addAmount(amount);
             session.update(wallet);
@@ -23,7 +23,7 @@ public class WalletDAO {
 
 
         }catch(Exception e){
-            return "{ \"error\": \"Internal Error\" }";
+            return "{ \"error\": \"internal error\" }";
         }
     }
     public String pay(Long orderId, double amount, PaymentMethod method, Long userId) {

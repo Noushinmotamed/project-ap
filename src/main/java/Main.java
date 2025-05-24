@@ -1,5 +1,6 @@
 
 import com.httpHandler.*;
+import com.models.Restaurant;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 public class Main {
@@ -12,6 +13,7 @@ public class Main {
         server.createContext("/auth/profile", new ProfileHttpHandler());
         server.createContext("/wallet/top-up", new WalletHttpHandler());
         server.createContext("/payment/online", new PaymentHttpHandler());
+        server.createContext("/restaurant/item", new FoodItemHttpHandler());
         server.start();
         System.out.println("Server started on port 8080...");
     }

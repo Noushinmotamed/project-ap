@@ -1,5 +1,6 @@
 package com.models;
 
+import com.google.gson.annotations.SerializedName;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
@@ -7,8 +8,10 @@ import jakarta.persistence.Entity;
 @Embeddable
 public class BankInfo {
     @Column
+    @SerializedName("bank_name")
     private String bankName;
     @Column( unique = true)
+    @SerializedName("account_number")
     private String accountNumber;
     public BankInfo(String bankName, String accountNumber) {
         this.bankName = bankName;

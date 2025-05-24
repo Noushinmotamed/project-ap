@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 
 import static com.util.HttpUtil.sendResponse;
+import static com.util.HttpUtil.sendSimpleResponse;
 
 public class PaymentHttpHandler implements HttpHandler {
     private WalletController walletController;
@@ -32,7 +33,7 @@ public class PaymentHttpHandler implements HttpHandler {
         String token = exchange.getRequestHeaders().getFirst("Authorization");
         String id = JwtUtil.validateToken(token);
         if (id == null) {
-            sendResponse(exchange, 401, "{ \"error\": \"Unauthorized\" }");
+            sendSimpleResponse(exchange, 401, "{ \"error\": \"unauthorized\" }");
             return;
         }
         Long userId = Long.valueOf(id);

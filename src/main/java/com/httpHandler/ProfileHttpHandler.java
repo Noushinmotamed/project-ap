@@ -81,8 +81,6 @@ public class ProfileHttpHandler implements HttpHandler {
 
 
             String responseBody = new Gson().toJson(response);
-
-
             byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, responseBytes.length);
@@ -149,10 +147,10 @@ public class ProfileHttpHandler implements HttpHandler {
                 user.setBankInfo(bankInfo);
             }
             if (updatedProfile.has("profileImageBase64")) user.setImageBase64(updatedProfile.get("profileImageBase64").getAsString());
-          if(user.getRole().toString().toLowerCase().equals("owner")) {
+            if(user.getRole().toString().toLowerCase().equals("owner")) {
 
-                        if(updatedProfile.has("brandName")) user.setBrandName(updatedProfile.get("brandName").getAsString());
-                        if(updatedProfile.has("explanation")) user.setExplanation(updatedProfile.get("explanation").getAsString());
+                if(updatedProfile.has("brandName")) user.setBrandName(updatedProfile.get("brandName").getAsString());
+                if(updatedProfile.has("explanation")) user.setExplanation(updatedProfile.get("explanation").getAsString());
 
 
             }
@@ -228,4 +226,3 @@ public class ProfileHttpHandler implements HttpHandler {
     }
 
 }
-

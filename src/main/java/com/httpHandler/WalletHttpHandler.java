@@ -15,6 +15,7 @@ import com.controller.WalletController;
 import com.util.JwtUtil;
 
 import static com.util.HttpUtil.sendResponse;
+import static com.util.HttpUtil.sendSimpleResponse;
 
 public class WalletHttpHandler implements HttpHandler {
 
@@ -37,48 +38,46 @@ public class WalletHttpHandler implements HttpHandler {
         String token = exchange.getRequestHeaders().getFirst("Authorization");
         String id = JwtUtil.validateToken(token);
         if (id == null) {
-            sendResponse(exchange, 401, "{ \"error\": \"Unauthorized\" }");
+            sendResponse(exchange, 401, "{ \"error\": \"unauthorized\" }");
             return;
         }
         Long userId = Long.valueOf(id);
        try(InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)) {
            JsonObject requestJson = new Gson().fromJson(reader, JsonObject.class);
-            if(!requestJson.has("amount") || !requestJson.has("method")) {
-                sendResponse(exchange, 400, "{ \"error\": \"Invalid input\" }");
+            if(!requestJson.has("amount") ) {
+                sendResponse(exchange, 400, "{ \"error\": \"invalid_input\" }");
                 return;
             }
-            String method = requestJson.get("method").getAsString();
             double amount = requestJson.get("amount").getAsDouble();
-            PaymentMethod paymentMethod = PaymentMethod.valueOf(method);
-            String response = walletController.topUpWallet(userId,amount,paymentMethod);
+            String response = walletController.topUpWallet(userId,amount);
             if(response.contains("error")) {
-                if(response.contains("Unauthorized")) {
-                    sendResponse(exchange, 401, response);
+                if(response.contains("unauthorized")) {
+                    sendSimpleResponse(exchange, 401, response);
 
-                }else if(response.contains("Invalid input")) {
-                    sendResponse(exchange, 400, response);
+                }else if(response.contains("invalid_input")) {
+                    sendSimpleResponse(exchange, 400, response);
 
-                }else if(response.contains("Not Found")) {
-                    sendResponse(exchange, 404, response);
+                }else if(response.contains("not_found")) {
+                    sendSimpleResponse(exchange, 404, response);
 
                 }else{
-                    sendResponse(exchange, 500, response);
+                    sendSimpleResponse(exchange, 500, response);
                 }
             }else{
-                sendResponse(exchange, 200, response);
+                sendSimpleResponse(exchange, 200, response);
 
             }
 
 
 
        } catch (Exception e) {
-           sendResponse(exchange, 400, "{ \"error\": \"Invalid input\" }");
+           sendResponse(exchange, 400, "{ \"error\": \"invalid_input\" }");
        }
 
     }
 
     public static void unauthorized(HttpExchange exchange) throws IOException {
-      sendResponse(exchange,401,"{\"error\":\"Unauthorized\"}");
+      sendResponse(exchange,401,"{\"error\":\"unauthorized\"}");
 
     }
 

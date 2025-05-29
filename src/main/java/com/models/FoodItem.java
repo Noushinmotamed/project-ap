@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table( name = "foodItems")
+@Table( name = "fooditems")
 public class FoodItem {
     @Column( nullable = false )
     private String name;
@@ -16,6 +16,8 @@ public class FoodItem {
     private String description;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SerializedName("food_id")
+    @Column( name = "foodid")
     private Long foodId;
 
     @Column( nullable = false )
@@ -31,10 +33,16 @@ public class FoodItem {
     @Column( nullable = false )
     private int supply;
 
-    @ElementCollection
-    @CollectionTable(name = "foodCategories", joinColumns = @JoinColumn(name = "foodId"))
-    @Column(name = "categories", nullable = false)
-    private List<String> categories= new ArrayList<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "foodcategories",  // PostgreSQL converts to lowercase unless quoted
+            joinColumns = @JoinColumn(
+                    name = "foodid",  // Must match exact foreign key column name
+                    referencedColumnName = "foodid"  // References FoodItem's primary key
+            )
+    )
+    @Column(name = "categories")  // Must match the keyword column name
+    private List<String> keywords = new ArrayList<>();
 
     @OneToMany(mappedBy = "foodItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rating> ratings;
@@ -83,11 +91,11 @@ public class FoodItem {
     public void setSupply(int supply) {
         this.supply = supply;
     }
-    public List<String> getCategories() {
-        return categories;
+    public List<String> getKeywords() {
+        return keywords;
     }
-    public void setCategories(List<String> categories) {
-        this.categories = categories;
+    public void setKeywords(List<String> categories) {
+        this.keywords = categories;
     }
     public List<Rating> getRatings() {
         return ratings;

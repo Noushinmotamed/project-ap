@@ -21,4 +21,10 @@ public class Restaurant {
    private int additional_fee;
     @Column(nullable = false)
     private Long ownerId;
+    public String getTax_fee() {
+        return tax_fee;
+    }
+    public Long getOwnerId() {
+        return ownerId;
+    }
 }

@@ -2,9 +2,13 @@ package com.models;
 
 import com.google.gson.annotations.SerializedName;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table( name = "fooditems")
@@ -47,11 +51,13 @@ public class FoodItem {
     @OneToMany(mappedBy = "foodItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rating> ratings;
 
-
-
-
-    @Column
-    private Long menuId;
+    @ElementCollection
+    @CollectionTable(
+            name = "menusList",
+            joinColumns = @JoinColumn(name = "foodItem_Id")
+    )
+    @Column(name = "menu_id")
+    private Set<Long> menuId = new HashSet<>();
 
     public String getName() {
         return name;
@@ -104,17 +110,24 @@ public class FoodItem {
     public void setRatings(ArrayList<Rating> ratings) {
         this.ratings = ratings;
     }
-    public Long getMenuId() {
-        return menuId;
-    }
-    public void setMenuId(Long menuId) {
-        this.menuId = menuId;
-    }
+
     public void setDescription(String description) {
         this.description = description;
     }
     public String getDescription() {
         return description;
+    }
+    public Set<Long> getMenuId(){
+        return menuId;
+    }
+    public void addMenuId(Long menuId){
+        this.menuId.add(menuId);
+    }
+    public void removeMenuId(Long menuId){
+        this.menuId.remove(menuId);
+    }
+    public boolean menuExists(Long menuId){
+        return this.menuId.contains(menuId);
     }
 
 

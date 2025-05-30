@@ -119,37 +119,30 @@ public class FoodItemDAO {
     }
     public JsonObject deleteItem(Long userId, Long restaurantId, Long itemId) {
         JsonObject response = new JsonObject();
-        System.out.println("restaurant :" +restaurantId);
-        System.out.println("user :" + userId);
-        System.out.println("item :" + itemId);
+
         try( Session session = HibernateUtil.getSessionFactory().openSession() ){
             Transaction tx = session.beginTransaction();
             User seller = session.get(User.class,userId);
             if(seller == null){
                 response.addProperty("error", "Resource not found");
-                System.out.println("seller is null");
                 return response;
             }
             Restaurant restaurant = session.get(Restaurant.class,restaurantId);
             if(restaurant == null){
                 response.addProperty("error", "Resource not found");
-                System.out.println("restaurant is null");
                 return response;
             }
             if(!restaurant.getOwnerId().equals(seller.getId())){
                 response.addProperty("error", "Forbidden request");
-                System.out.println("forbidden request");
                 return response;
             }
             FoodItem foodItem = session.get(FoodItem.class,itemId);
             if(foodItem == null){
                 response.addProperty("error", "Resource not found");
-                System.out.println("resource not found");
                 return response;
             }
             if(!foodItem.getVendorId().equals(restaurantId)) {
                 response.addProperty("error", "Forbidden request");
-                System.out.println("forbidden request");
                 return response;
             }
             session.delete(foodItem);

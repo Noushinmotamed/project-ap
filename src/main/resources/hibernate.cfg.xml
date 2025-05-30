@@ -43,6 +43,7 @@
         <mapping class="com.models.Wallet"/>
         <mapping class="com.models.Notification"/>
         <mapping class="com.models.BankInfo"/>
+        <mapping class="com.models.Menu"/>
 
 
     </session-factory>

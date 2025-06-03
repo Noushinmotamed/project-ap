@@ -8,7 +8,7 @@ import java.util.Objects;
  * email in optional so it could be null
  * id will be created by db
  */
-                            // JAVA NAMES NOT MATCHING JSON? SERIALIZE !!!
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -64,7 +64,7 @@ public class User {
         this.profileImageBase64 = profileImageBase64;
         this.role = Objects.requireNonNull(role);
         this.bankInfo = bankInfo;
-        if(role == Role.courier) { courierStatus = CourierStatus.AVAILABLE; }
+
 
     }
 
@@ -110,6 +110,7 @@ public class User {
     public void setImageBase64(String profileImageBase64) { this.profileImageBase64 = profileImageBase64; }
     public void setBrandName(String brandName) { this.brandName = brandName; }
     public void setExplanation(String explanation) { this.explanation = explanation; }
+    public void setCourierStatus(CourierStatus courierStatus) { this.courierStatus = courierStatus; }
 
 }
 

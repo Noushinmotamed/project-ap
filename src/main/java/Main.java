@@ -3,6 +3,12 @@ import com.httpHandler.*;
 import com.models.Restaurant;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
+
+/**
+ * HttpHandler classes : check token,get request, check required fields, check formats, make object if necessary
+ * Controller classes : check fields of created object and other logics
+ * DAO classes : anything that requires working with db
+ */
 public class Main {
     public static void main(String[] args) throws Exception {
         HttpServer server =HttpServer.create(new InetSocketAddress(8080), 0);
@@ -14,6 +20,7 @@ public class Main {
         server.createContext("/wallet/top-up", new WalletHttpHandler());
         server.createContext("/payment/online", new PaymentHttpHandler());
         server.createContext("/restaurant", new RestaurantHttpHandler());
+        server.createContext("/admin",new AdminHttpHandler());
         server.start();
         System.out.println("Server started on port 8080...");
     }

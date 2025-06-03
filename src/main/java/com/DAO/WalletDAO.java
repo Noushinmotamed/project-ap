@@ -3,18 +3,17 @@ package com.DAO;
 import com.models.*;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
 
 import java.time.LocalTime;
 
 public class WalletDAO {
     public String updateWallet(Long id, double amount) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
-            Transaction tx = session.beginTransaction();
+            org.hibernate.Transaction tx = session.beginTransaction();
             Wallet wallet = session.createQuery("from Wallet where userId = :id", Wallet.class).setParameter("id", id).uniqueResult();
 
             if(wallet == null) {
-                return "{ \"error\": \"Request not found\" }";
+                return "{ \"error\": \"Resource not found\" }";
             }
             wallet.addAmount(amount);
             session.update(wallet);
@@ -28,15 +27,15 @@ public class WalletDAO {
     }
     public String pay(Long orderId, double amount, PaymentMethod method, Long userId) {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
-            Transaction tx = session.beginTransaction();
+            org.hibernate.Transaction tx = session.beginTransaction();
             Order order = session.get(Order.class, orderId);
-            if(order == null || !order.getCustomerId().equals(userId)) {
+            if(order == null || !order.getUserId().equals(userId)) {
                 return "{ \"error\": \"Order not found\" }";
             }
-            if(order.getStatus() == OrderStatus.PAID){
+            if(order.getStatus() == OrderStatus.submitted){              //THIS IS TOTALLY WRONG
                 return "{ \"error\": \"Order is paid already\" }";
             }
-            if(amount!= order.getTotalPrice()){
+            if(amount!= order.getRawPrice()){
                 return "{ \"error\": \"Invalid input or insufficient balance\" }";
             }
             if(method == PaymentMethod.wallet) {
@@ -50,11 +49,11 @@ public class WalletDAO {
                     return "{ \"error\": \"Invalid input or insufficient balance\" }";
                 }
             }
-                order.setStatus(OrderStatus.PAID);
+                order.setStatus(OrderStatus.submitted);                      //WRONGGG
                 session.update(order);
 
-                Notification not1 = sendNotification(orderId,amount,method,userId);
-                Notification not2 = sendNotification(orderId,amount,method,order.getSellerId());
+                Transaction not1 = sendNotification(orderId,amount,method,userId);
+                Transaction not2 = sendNotification(orderId,amount,method,order.getSellerId());
                 session.save(not1);
                 session.save(not2);
 
@@ -69,12 +68,12 @@ public class WalletDAO {
             return "{ \"error\": \"Internal Error\" }";
         }
     }
-    private Notification sendNotification(Long orderId, double amount, PaymentMethod method, Long userId) {
-        Notification notification = new Notification();
-        notification.setUserId(userId);
-        notification.setMessage("Payment successful\n" + "orderId: " + orderId + "\n" + "amount: " + amount + "\n" + "method: " + method + "\n" + "payed at : " + LocalTime.now()
+    private Transaction sendNotification(Long orderId, double amount, PaymentMethod method, Long userId) {
+        Transaction transaction = new Transaction();
+        transaction.setUserId(userId);
+        transaction.setMessage("Payment successful\n" + "orderId: " + orderId + "\n" + "amount: " + amount + "\n" + "method: " + method + "\n" + "payed at : " + LocalTime.now()
         );
-        return notification;
+        return transaction;
     }
 
 

@@ -36,12 +36,11 @@
         <mapping class="com.models.BasketItem"/>
         <mapping class="com.models.FoodItem"/>
         <mapping class="com.models.Order"/>
-        <mapping class="com.models.OrderItem"/>
         <mapping class="com.models.OrderLogStatus"/>
         <mapping class="com.models.Restaurant"/>
         <mapping class="com.models.Rating"/>
         <mapping class="com.models.Wallet"/>
-        <mapping class="com.models.Notification"/>
+        <mapping class="com.models.Transaction"/>
         <mapping class="com.models.BankInfo"/>
         <mapping class="com.models.Menu"/>
 

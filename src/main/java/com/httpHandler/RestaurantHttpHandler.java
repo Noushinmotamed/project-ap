@@ -7,6 +7,7 @@ import com.models.FoodItem;
 import com.models.Menu;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import com.util.HttpUtil;
 import com.util.JwtUtil;
 
 import java.awt.*;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.util.HttpUtil.handleResponse;
 import static com.util.HttpUtil.sendResponse;
 
 
@@ -190,7 +192,7 @@ public class RestaurantHttpHandler implements HttpHandler {
             }
         }
         JsonObject response = foodItemController.addItem(foodItemToAdd,Long.parseLong(id),restaurantId);
-        handleResponse(exchange,response);
+         handleResponse(exchange,response);
 
     }
     private void handleEditItem(HttpExchange exchange,Long itemId, Long restaurantId) throws IOException {
@@ -354,26 +356,5 @@ public class RestaurantHttpHandler implements HttpHandler {
 
 
     }
-    private void handleResponse(HttpExchange exchange,JsonObject response) throws IOException {
-        String responseString = new GsonBuilder().setPrettyPrinting().create().toJson(response);
 
-        if(response.has("error")) {
-            String error = response.get("error").getAsString();
-            if(error.contains("not found")) {
-                sendResponse(exchange, 404, responseString);
-            }else if(error.contains("Invalid")){
-                sendResponse(exchange, 400, responseString);
-            }else if(error.contains("Internal server error")) {
-                sendResponse(exchange, 500, responseString);
-            }else if(error.contains("Forbidden")) {
-                sendResponse(exchange, 403,responseString);
-            }else if(error.contains("Conflict occurred")) {
-                sendResponse(exchange, 409, responseString);
-            }
-
-        }else{
-            sendResponse(exchange, 200, responseString);
-        }
-
-    }
 }

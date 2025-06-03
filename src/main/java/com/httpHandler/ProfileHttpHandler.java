@@ -215,7 +215,10 @@ public class ProfileHttpHandler implements HttpHandler {
             } catch (NumberFormatException e) {
                 return false;
             }
-        } else {
+        }else if (number.equals("admin")){
+            return true;
+        }
+        else {
             return false;
 
         }

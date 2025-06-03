@@ -1,6 +1,7 @@
 package com.controller;
 
 import com.DAO.WalletDAO;
+import com.google.gson.JsonObject;
 import com.models.PaymentMethod;
 
 public class WalletController {
@@ -10,16 +11,14 @@ public class WalletController {
     }
     public String topUpWallet(Long id, double amount) {
         if(amount< 0) {
-            return "{ \"error\": \"invalid_input\" }";
+            return "{ \"error\": \"Invalid amount\" }";
         }else{
             return walletDAO.updateWallet(id,amount) ;
 
         }
     }
-    public String pay(Long orderId, double amount, PaymentMethod method, Long userId) {
-        if(amount< 0) {
-            return "{ \"error\": \"invalid_input\" }";
-        }
-        return walletDAO.pay(orderId,amount,method,userId);
+    public JsonObject pay(Long orderId, PaymentMethod method, Long userId) {
+
+        return walletDAO.pay(orderId,method,userId);
     }
 }

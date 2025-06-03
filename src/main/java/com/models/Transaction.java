@@ -67,4 +67,11 @@ public class Transaction {
     public String getMessage() {
         return message;
     }
+    public void setStatus(TransactionStatus status) { this.status = status; }
+    public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public void setMethod(PaymentMethod method) { this.method = method; }
+
+    public Long getOrderId() {
+        return orderId;
+    }
 }

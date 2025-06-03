@@ -13,12 +13,58 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 
-import static com.util.HttpUtil.sendResponse;
-import static com.util.HttpUtil.sendSimpleResponse;
+import static com.util.HttpUtil.*;
 
+//  /payment/online:
+//    post:
+//      tags:
+//      - order
+//      summary: Make an online payment for an order
+//      security:
+//      - bearerAuth: []
+//      requestBody:
+//        required: true
+//        content:
+//          application/json:
+//            schema:
+//              type: object
+//              required:
+//              - order_id
+//              - method
+//              properties:
+//                order_id:
+//                  type: integer
+//                method:
+//                  type: string
+//                  enum:
+//                  - wallet
+//                  - online
+//      responses:
+//        '200':
+//          description: Payment successful
+//          content:
+//            application/json:
+//              schema:
+//                $ref: '#/components/schemas/transaction'
+//        '400':
+//          $ref: '#/components/responses/invalid_input'
+//        '401':
+//          $ref: '#/components/responses/unauthorized'
+//        '404':
+//          $ref: '#/components/responses/not_found'
+//        '403':
+//          $ref: '#/components/responses/forbidden'
+//        '409':
+//          $ref: '#/components/responses/conflict'
+//        '415':
+//          $ref: '#/components/responses/unsupported_media_type'
+//        '429':
+//          $ref: '#/components/responses/too_many_requests'
+//        '500':
+//          $ref: '#/components/responses/internal_server_error'
 public class PaymentHttpHandler implements HttpHandler {
-    private WalletController walletController;
-    public PaymentHttpHandler() throws SQLException {
+    private final WalletController walletController;
+    public PaymentHttpHandler()  {
         walletController = new WalletController();
     }
     @Override
@@ -26,46 +72,49 @@ public class PaymentHttpHandler implements HttpHandler {
         if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
             handlePayment(exchange);
         }else{
-           exchange.sendResponseHeaders(405, 0);
+          sendResponse(exchange,405,"{\"error\":\"Method not allowed\"}");
         }
     }
     private void handlePayment(HttpExchange exchange) throws IOException {
         String token = exchange.getRequestHeaders().getFirst("Authorization");
         String id = JwtUtil.validateToken(token);
         if (id == null) {
-            sendSimpleResponse(exchange, 401, "{ \"error\": \"unauthorized\" }");
+            sendResponse(exchange, 401, "{ \"error\": \"Unauthorized request\" }");
             return;
         }
         Long userId = Long.valueOf(id);
         try(InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)){
             JsonObject requestJson = new Gson().fromJson(reader, JsonObject.class);
-            if(!requestJson.has("amount") || !requestJson.has("method") || !requestJson.has("orderId")) {
-                sendResponse(exchange, 400, "{ \"error\": \"Invalid input or insufficient balance\" }");
+            PaymentMethod method = null;
+            Long orderId = null;
+            if( !requestJson.has("method")) {
+                sendResponse(exchange, 400, "{ \"error\": \"Invalid method\" }");
                 return;
-            }
-            Long orderId = requestJson.get("orderId").getAsLong();
-            double amount = requestJson.get("amount").getAsDouble();
-            PaymentMethod method = PaymentMethod.valueOf(requestJson.get("method").getAsString());
-            String response = walletController.pay(orderId, amount, method, userId);
-            if(response.contains("error")) {
-                if(response.contains("\"error\": \"Unauthorized\"")) {
-                    sendResponse(exchange, 401, response);
-                }else if(response.contains("Invalid")) {
-                    sendResponse(exchange, 400, response);
-                }else if(response.contains("not found")) {
-                    sendResponse(exchange, 404, response);
-                }else if(response.contains("already")){
-                    sendResponse(exchange, 400, response);
-                }else{
-                    sendResponse(exchange, 500, response);
+            }else{
+                try{
+                    method = PaymentMethod.valueOf(requestJson.get("method").getAsString());
+                }catch(Exception e){
+                    sendResponse(exchange, 400, "{ \"error\": \"Invalid method\" }");
+                    return;
                 }
 
-            }else if(response.contains("success")) {
-                sendResponse(exchange, 200, response);
             }
+            if( !requestJson.has("order_id")) {
+                sendResponse(exchange, 400, "{ \"error\": \"Invalid order_id\" }");
+                return;
+            }else{
+                try{
+                    orderId = Long.parseLong(requestJson.get("order_id").getAsString());
+                }catch(NumberFormatException | NullPointerException e){
+                    sendResponse(exchange, 400, "{ \"error\": \"Invalid order_id\" }");
+                    return;
+                }
+            }
+            JsonObject response = walletController.pay(orderId,method, userId);
+            handleResponse(exchange,response);
 
         }catch(Exception e){
-            sendResponse(exchange, 400, "{ \"error\": \"Invalid input or insufficient balance\" }");
+            sendResponse(exchange, 500, "{ \"error\": \"Internal server error\" }");
         }
     }
 }

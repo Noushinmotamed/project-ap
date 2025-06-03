@@ -32,4 +32,7 @@ public class Wallet {
             return false;
         }
     }
+    public double getBalance() {
+        return balance;
+    }
 }

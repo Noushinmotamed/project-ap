@@ -1,10 +1,19 @@
 package com.DAO;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.models.*;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.LocalTime;                                                              //                                                          //
+                                                                       // WHICH STATUS MEAN ORDER HAS BEEN PAID ????
+                                                                       // WHAT IS THE RESPONSE IF WALLET DOESN'T HAVE ENOUGH BALANCE ??
+                                                                      // CAN BUYER STILL PAY CANCELLED ORDER ??
+                                                                      // I ASSUME YOU SHOULD PAY AFTER THE ORDER STATUS WAS SET TO SUBMITTED ORDER (AND CHANGES TO WAITING VENDOR)
+                                                                      // IF INSUFFICIENT BALANCE : DO YOU SEND ERROR OR JUST SEND TRANSACTION WITH FAILED STATUS ?!
 
 public class WalletDAO {
     public String updateWallet(Long id, double amount) {
@@ -22,59 +31,72 @@ public class WalletDAO {
 
 
         }catch(Exception e){
-            return "{ \"error\": \"internal error\" }";
+            return "{ \"error\": \"Internal server error\" }";
         }
     }
-    public String pay(Long orderId, double amount, PaymentMethod method, Long userId) {
+    public JsonObject pay(Long orderId,  PaymentMethod method, Long userId) {
+        JsonObject response = new JsonObject();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        TransactionStatus status = TransactionStatus.failed;
+        Transaction transaction = new Transaction();
+        transaction.setStatus(status);
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             org.hibernate.Transaction tx = session.beginTransaction();
             Order order = session.get(Order.class, orderId);
             if(order == null || !order.getUserId().equals(userId)) {
-                return "{ \"error\": \"Order not found\" }";
+                response.addProperty("error", "Resource not found");
+                return response;
             }
-            if(order.getStatus() == OrderStatus.submitted){              //THIS IS TOTALLY WRONG
-                return "{ \"error\": \"Order is paid already\" }";
+            User user = session.get(User.class, userId);
+            if(user == null) {
+                response.addProperty("error", "Resource not found");
+                return response;
             }
-            if(amount!= order.getRawPrice()){
-                return "{ \"error\": \"Invalid input or insufficient balance\" }";
+
+            if(order.getStatus() != null && order.getStatus()!= OrderStatus.unpaidAndCancelled && order.getStatus() != OrderStatus.submitted ){              //ORDER ALREADY PAID
+               response.addProperty("error", "Conflict occurred");
+               return response;
             }
+
             if(method == PaymentMethod.wallet) {
                 Wallet wallet = session.createQuery("from Wallet where userId = :id", Wallet.class).setParameter("id", userId).uniqueResult();
                 if (wallet == null) {
-                    return "{ \"error\": \"Forbidden\" }";
+                  response.addProperty("error", "Resource not found");
+                  return response;
                 }
-                if (wallet.removeAmount(amount)) {
+
+                if (wallet.removeAmount(order.getTotalPrice())) {
                     session.update(wallet);
+                    status= TransactionStatus.success;
                 } else {
-                    return "{ \"error\": \"Invalid input or insufficient balance\" }";
+                    status = TransactionStatus.failed;
                 }
+            }else{
+                status = TransactionStatus.success;
             }
-                order.setStatus(OrderStatus.submitted);                      //WRONGGG
+                if(status == TransactionStatus.success) {
+                    order.setStatus(OrderStatus.waitingVendor);                      //WRONG ?
+                    order.setUpdatedAt(LocalDateTime.now().toString());
+                }
                 session.update(order);
 
-                Transaction not1 = sendNotification(orderId,amount,method,userId);
-                Transaction not2 = sendNotification(orderId,amount,method,order.getSellerId());
-                session.save(not1);
-                session.save(not2);
-
+                transaction.setUserId(userId);
+                transaction.setStatus(status);
+                transaction.setOrderId(orderId);
+                transaction.setMethod(method);
+                session.save(transaction);
                 tx.commit();
-                return "{ \"message\": \"Payment successful\" }";
-
+                  return gson.toJsonTree(transaction).getAsJsonObject();
 
 
         }catch(Exception e){
             e.printStackTrace();
 
-            return "{ \"error\": \"Internal Error\" }";
+            response.addProperty("error", "Internal server error");
+            return response;
         }
     }
-    private Transaction sendNotification(Long orderId, double amount, PaymentMethod method, Long userId) {
-        Transaction transaction = new Transaction();
-        transaction.setUserId(userId);
-        transaction.setMessage("Payment successful\n" + "orderId: " + orderId + "\n" + "amount: " + amount + "\n" + "method: " + method + "\n" + "payed at : " + LocalTime.now()
-        );
-        return transaction;
-    }
+
 
 
 

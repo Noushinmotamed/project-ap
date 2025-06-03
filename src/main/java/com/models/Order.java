@@ -88,7 +88,7 @@ public class Order {
 
     @Column
     @SerializedName("tax_fee")
-    private Integer taxFee;
+    private Integer taxFee=0;
 
     @Column
     @SerializedName("additional_fee")
@@ -144,6 +144,12 @@ public class Order {
     }
     public Set<Long> getItemIds() {
         return itemIds;
+    }
+    public double getTotalPrice() {
+        return payPrice==0 ? rawPrice + taxFee + additionalFee + courierFee : payPrice;
+    }
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
 }

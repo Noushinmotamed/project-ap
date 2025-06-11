@@ -15,53 +15,7 @@ import java.sql.SQLException;
 
 import static com.util.HttpUtil.*;
 
-//  /payment/online:
-//    post:
-//      tags:
-//      - order
-//      summary: Make an online payment for an order
-//      security:
-//      - bearerAuth: []
-//      requestBody:
-//        required: true
-//        content:
-//          application/json:
-//            schema:
-//              type: object
-//              required:
-//              - order_id
-//              - method
-//              properties:
-//                order_id:
-//                  type: integer
-//                method:
-//                  type: string
-//                  enum:
-//                  - wallet
-//                  - online
-//      responses:
-//        '200':
-//          description: Payment successful
-//          content:
-//            application/json:
-//              schema:
-//                $ref: '#/components/schemas/transaction'
-//        '400':
-//          $ref: '#/components/responses/invalid_input'
-//        '401':
-//          $ref: '#/components/responses/unauthorized'
-//        '404':
-//          $ref: '#/components/responses/not_found'
-//        '403':
-//          $ref: '#/components/responses/forbidden'
-//        '409':
-//          $ref: '#/components/responses/conflict'
-//        '415':
-//          $ref: '#/components/responses/unsupported_media_type'
-//        '429':
-//          $ref: '#/components/responses/too_many_requests'
-//        '500':
-//          $ref: '#/components/responses/internal_server_error'
+
 public class PaymentHttpHandler implements HttpHandler {
     private final WalletController walletController;
     public PaymentHttpHandler()  {

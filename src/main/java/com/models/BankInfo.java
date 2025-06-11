@@ -10,7 +10,7 @@ public class BankInfo {
     @Column
     @SerializedName("bank_name")
     private String bankName;
-//    @Column( unique = true)
+    @Column
     @SerializedName("account_number")
     private String accountNumber;
     public BankInfo(String bankName, String accountNumber) {

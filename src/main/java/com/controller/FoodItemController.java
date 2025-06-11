@@ -13,7 +13,7 @@ public class FoodItemController {
 
     public JsonObject addItem(FoodItem foodItem, Long userId, Long restaurantId) {
         JsonObject response = new JsonObject();
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
         if(foodItem.getPrice() < 0) {
             response.addProperty("error", "Invalid price");
             return response;

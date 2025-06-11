@@ -54,7 +54,8 @@ public class User {
     @Column
     private CourierStatus courierStatus;             // only for courier
 
-    protected User() {}
+
+    public User() {}
     public User(String fullName, String phone, String email, String password,String address, String profileImageBase64, Role role, BankInfo bankInfo) {
         this.fullName = Objects.requireNonNull(fullName);
         this.phone = Objects.requireNonNull(phone);
@@ -74,11 +75,11 @@ public class User {
     public Role getRole() {
         return role;
     }
-
+    public void setRole(Role role) { this.role = role; }
     public void setAddress(String address) {
         this.address = address;
     }
-
+    public CourierStatus getCourierStatus() { return courierStatus; }
     public Long getId() {
         return id;
     }

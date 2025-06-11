@@ -81,7 +81,6 @@ public class AdminDAO {
             if(admin == null){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");
-                System.out.println("admin not found");
                 return response;
             }
             if(admin.getRole() != Role.admin ) {
@@ -106,7 +105,6 @@ public class AdminDAO {
             if(orders.isEmpty()){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");
-                System.out.println("order not found");
                 return response;
             }
             // a replacement for iteration on orders that intellij suggested
@@ -114,7 +112,6 @@ public class AdminDAO {
             if(orders.isEmpty()){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");
-                System.out.println("order not found");
                 return response;
             }
             tx.commit();

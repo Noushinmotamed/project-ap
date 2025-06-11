@@ -35,4 +35,8 @@ public class Wallet {
     public double getBalance() {
         return balance;
     }
+    public void setUserId(long userId) {
+        this.userId = userId;
+    }
+
 }

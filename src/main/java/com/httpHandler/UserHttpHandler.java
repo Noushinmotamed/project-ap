@@ -1,4 +1,5 @@
 package com.httpHandler;
+import com.controller.UserController;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.models.*;
@@ -13,265 +14,159 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;                                                              //should i return the profile object?
 
-import static com.httpHandler.ProfileHttpHandler.isValidNumber;
+
+import static com.controller.UserController.isValidNumber;
+import static com.util.HttpUtil.handleResponse;
+import static com.util.HttpUtil.sendResponse;
 import static com.util.JwtUtil.addToInvalid;
+import static com.util.JwtUtil.getKey;
+
 
 public class UserHttpHandler implements HttpHandler {
+    UserController userController = new UserController();
+
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        switch (exchange.getRequestMethod()) {
-            case "POST":
-                String path = exchange.getRequestURI().getPath();
+        if (exchange.getRequestMethod().equals("POST")) {
+            String path = exchange.getRequestURI().getPath();
 
-                if (path.equals("/auth/register")) {
-                    handleSignup(exchange);
-                } else if (path.equals("/auth/login")) {
-                    handleLogin(exchange);
-                } else if(path.equals("/auth/logout")) {
-                      handleLogout(exchange);
-                }else{
-                    String response = "not_found";
-                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                    exchange.sendResponseHeaders(404, responseBytes.length);
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(responseBytes);
-                    }
-                }
+            if (path.equals("/auth/register")) {
+                handleSignup(exchange);
+            } else if (path.equals("/auth/login")) {
+                handleLogin(exchange);
+            } else if (path.equals("/auth/logout")) {
+                handleLogout(exchange);
+            } else {
+                sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
+            }
 
-                break;
-            default:
-                String response = "method_not_allowed";
-                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(405, responseBytes.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(responseBytes);
-                }
-
+        } else {
+            sendResponse(exchange, 404, "{\n  \"error\":\"Method not allowed\"\n}");
+            return;
         }
 
     }
 
     private void handleSignup(HttpExchange exchange) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
-        User user = new Gson().fromJson(reader, User.class);
-        if(user.getRole() ==null || user.getPassword() == null || user.getAddress() == null || user.getFullName() == null || user.getRole()== null){
-            String response = "Invalid_input";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(400, responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(responseBytes);
-            }
-            return;
-        }try{
-            Role.valueOf(user.getRole().toString());
-        }catch(IllegalArgumentException e){
-            String response = "Invalid_input";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(400, responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(responseBytes);
-            }
+        User user = new User();
+        JsonObject input = new Gson().fromJson(reader, JsonObject.class);
+        if(input.has("phone")){
+            user.setPhone(input.get("phone").getAsString());
+        }else{
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid phone\"\n}");
             return;
         }
-        if(!isValidEmail(user.getEmail()) || !isValidPhoneNumber(user.getPhone())) {
-            String response = "Invalid_input";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(400, responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(responseBytes);
-            }
+        if (input.has("password")) {
+            user.setPassword(input.get("password").getAsString());
+        } else {
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid password\"\n}");
             return;
-
         }
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Transaction transaction = session.beginTransaction();
-            if (isPhoneNumberTaken(session, user.getPhone())) {
-                String response = "{\"error\":\"Phone number already exists\"}";
-                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(409, responseBytes.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
+        if (input.has("full_name")) {
+            user.setFullName(input.get("full_name").getAsString());
+        } else {
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid full_name\"\n}");
+            return;
+        }
+        if (input.has("address")) {
+            user.setAddress(input.get("address").getAsString());
+        } else {
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid address\"\n}");
+            return;
+        }
+        if (input.has("role")) {
+            Role role;
+            try {
+                 role = Role.valueOf(input.get("role").getAsString());
+            } catch (IllegalArgumentException e) {
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid role\"\n}");
                 return;
-            }                                                                      //save user directly to db,also create basket,profile and wallet
-
-
-         if(user.getRole() == Role.seller || user.getRole() == Role.courier) {
-                 if(user.getBankInfo()!= null && (user.getBankInfo().getBankName()== null || user.getBankInfo().getBankName().isEmpty() || user.getBankInfo().getAccountNumber()== null || user.getBankInfo().getAccountNumber().isEmpty())){
-                     String response = "Invalid_input";
-                     byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                     exchange.sendResponseHeaders(400, responseBytes.length);
-                     try (OutputStream os = exchange.getResponseBody()) {
-                         os.write(responseBytes);
-                     }
-                     return;
-                }
-            }else{
-             user.setBankInfo(null);
-         }
-            session.save(user);
-            if(user.getRole() == Role.buyer) {
-                Basket basket = new Basket(user.getId());
-                Wallet wallet = new Wallet(user.getId());
-                session.save(basket);
-                session.save(wallet);
             }
+            user.setRole(role);
+        } else {
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid role\"\n}");
+            return;
+        }
+        if (input.has("email")) {
+            user.setEmail(input.get("email").getAsString());
+        }
+        if (input.has("profileImageBase64")) {
+            user.setImageBase64(input.get("profileImageBase64").getAsString());
+        }
+        if (input.has("bank_info")) {
+            JsonObject bankInfo = input.get("bank_info").getAsJsonObject();
+            if (!bankInfo.has("account_number")) {
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid account_number\"\n}");
+                return;
+            } else if (!bankInfo.has("bank_name")) {
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid bank_name\"\n}");
+                return;
+            } else {
 
-            transaction.commit();
-            String token = generateJwtToken(user);
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("message","User registered successfully");
-            jsonObject.addProperty("userId", user.getId());
-            jsonObject.addProperty("token", token);
-            String response = new Gson().toJson(jsonObject);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
-
-        }catch (Exception e) {
-            e.printStackTrace();
-            String response = "internal_server_error";
-            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+                user.setBankInfo(new BankInfo(bankInfo.get("bank_name").getAsString(), bankInfo.get("account_number").getAsString()));
             }
         }
+        reader.close();
+        JsonObject response = userController.addUser(user);
+        handleResponse(exchange, response);
     }
+
     private void handleLogin(HttpExchange exchange) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         JsonObject userToLogIn = new Gson().fromJson(reader, JsonObject.class);
-
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            if(!userToLogIn.has("phone") || !isValidPhoneNumber(userToLogIn.get("phone").getAsString()) || !userToLogIn.has("password")){
-                String response = "Invalid_input";
-                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(400, responseBytes.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(responseBytes);
-                }
-                return;
-            }
-            User foundUser = getUserByPhoneNumber(session,userToLogIn.get("phone").getAsString());
-            if(foundUser== null || !userToLogIn.get("password").getAsString().equals(foundUser.getPassword()) ){
-                String response = "{\"error\":\"invalid_input\"}";
-                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(400, responseBytes.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
-                return;
-            }
-
-            String token = generateJwtToken(foundUser);
-
-            JsonObject responseJson = new JsonObject();
-            responseJson.addProperty("message", "User logged in successfully");
-            responseJson.addProperty("token", token);
-
-            JsonObject userJson = new JsonObject();
-            userJson.addProperty("id", foundUser.getId().toString());
-            userJson.addProperty("fullName", foundUser.getFullName());
-            userJson.addProperty("role", foundUser.getRole().toString());
-            responseJson.add("user", userJson);
-
-            String responseBody = new Gson().toJson(responseJson);
-            byte[] responseBytes = responseBody.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(responseBytes);
-            }
-
-
-        }catch (Exception e) {
-            e.printStackTrace();
-            String response = "internal_server_error";
-            exchange.sendResponseHeaders(500, response.getBytes().length); // 500 Internal Server Error
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
+        if (!userToLogIn.has("password")) {
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid password\"\n}");
+            return;
         }
+        if (!userToLogIn.has("phone")) {
+            sendResponse(exchange, 400, "{\n  \"error\":\"Invalid phone\"\n}");
+            return;
+        }
+        String password = userToLogIn.get("password").getAsString();
+        String phone = userToLogIn.get("phone").getAsString();
+        JsonObject response = userController.logInUser(phone, password);
+        reader.close();
+        handleResponse(exchange, response);
+
+
+
     }
+
     private void handleLogout(HttpExchange exchange) throws IOException {
+
         String token = exchange.getRequestHeaders().getFirst("Authorization");
-        if (token == null || token.isEmpty()) {
-            String response = "{\"error\":\"Unauthorized\"}";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
-            return;
-        }
         String id = JwtUtil.validateToken(token);
+
         if (id == null) {
-            String response = "{\"error\":\"Unauthorized\"}";
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(401, responseBytes.length);  // 401 Unauthorized
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
-            return;
+            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
         }
-        try(Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             session.beginTransaction();
             Long userId = Long.valueOf(id);
             User user = session.get(User.class, userId);
             if (user == null) {
-                exchange.sendResponseHeaders(404, -1); // Not Found
+                sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
                 return;
             }
-            JwtUtil.addToInvalid(token);
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("message","User logged out successfully");
-            String response = new Gson().toJson(jsonObject);
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
 
 
+            sendResponse(exchange, 200, "{\n  \"message\":\"User logged out successfully\"\n}");
 
-        }catch(Exception e){
-            exchange.sendResponseHeaders(500, -1);
+
+        } catch (Exception e) {
+            sendResponse(exchange, 500, "{\n  \"error\":\"Internal server error\"\n}");
             e.printStackTrace();
+            return;
         }
 
     }
-    private boolean isPhoneNumberTaken(Session session, String phoneNumber){
-        User user = session.createQuery("from User where phone = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
-        return user!=null ;
 
-
-    }
-    private User getUserByPhoneNumber(Session session, String phoneNumber){
-       return session.createQuery("from User where phone = :phoneNumber", User.class).setParameter("phoneNumber", phoneNumber).uniqueResult();
-    }
-    public static boolean isValidEmail(String email){
-        if (email == null || email.isEmpty()) {
-            return true;
-        }
-        return email.contains("@") && email.contains(".");
-    }
-
-    /**
-     *
-     * input format for phone number : [user input example : 09194772344]
-     */
-    public boolean isValidPhoneNumber(String phoneNumber){
-    return isValidNumber(phoneNumber);
-    }
-    private String generateJwtToken(User user) {
-        return JwtUtil.generateToken(user.getId().toString());
-    }
 
 }
+
+
+
 
 
 

@@ -2,6 +2,7 @@ package com.httpHandler;
 
 import com.controller.FoodItemController;
 import com.controller.MenuController;
+import com.controller.RestaurantOrderController;
 import com.google.gson.*;
 import com.models.FoodItem;
 import com.models.Menu;
@@ -17,7 +18,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import static com.httpHandler.AdminHttpHandler.parseQueryParameters;
 import static com.util.HttpUtil.handleResponse;
 import static com.util.HttpUtil.sendResponse;
 
@@ -27,9 +30,16 @@ import static com.util.HttpUtil.sendResponse;
 public class RestaurantHttpHandler implements HttpHandler {
     private final FoodItemController foodItemController= new FoodItemController();
     private final MenuController menuController= new MenuController();
+    private final RestaurantOrderController restaurantOrderController= new RestaurantOrderController();
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        String token = exchange.getRequestHeaders().getFirst("Authorization");
+        String id = JwtUtil.validateToken(token);
+        if (id == null) {
+            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
+            return;
+        }
          String path = exchange.getRequestURI().getPath();
          String[] pathParts = path.split("/");
          Long restaurantId = null;
@@ -49,7 +59,7 @@ public class RestaurantHttpHandler implements HttpHandler {
          if(pathParts.length ==4 && pathParts[3].equals("item")) {
              String method = exchange.getRequestMethod();
              if(method.equals("POST")) {
-                 handleAddItem(exchange,restaurantId);
+                 handleAddItem(exchange,restaurantId,Long.parseLong(id));
              }else{
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
@@ -64,34 +74,34 @@ public class RestaurantHttpHandler implements HttpHandler {
              }
              String method = exchange.getRequestMethod();
              if(method.equals("PUT")) {
-                 handleEditItem(exchange,itemId,restaurantId);
+                 handleEditItem(exchange,itemId,restaurantId,Long.parseLong(id));
              }else if(method.equals("DELETE")) {
-                 handleDeleteItem(exchange,itemId,restaurantId);
+                 handleDeleteItem(exchange,itemId,restaurantId,Long.parseLong(id));
              }else{
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
              }
-         }if(pathParts.length ==4 && pathParts[3].equals("menu")) {
+         }else if(pathParts.length ==4 && pathParts[3].equals("menu")) {
              String method = exchange.getRequestMethod();
              if(method.equals("POST")) {
-                 handleAddMenu(exchange,restaurantId);
+                 handleAddMenu(exchange,restaurantId,Long.parseLong(id));
              }else{
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
              }
-        }if(pathParts.length ==5 && pathParts[3].equals("menu")) {
+        }else if(pathParts.length ==5 && pathParts[3].equals("menu")) {
              String titleEncoded = pathParts[4];
              String title = titleEncoded.replace("%20", " ");
              String method = exchange.getRequestMethod();
              if(method.equals("DELETE")) {
-                 handleDeleteMenu(exchange,restaurantId,title);
+                 handleDeleteMenu(exchange,restaurantId,title,Long.parseLong(id));
              }else if(method.equals("PUT")) {
-                 handleAddOItemToMenu(exchange,restaurantId,title);
+                 handleAddOItemToMenu(exchange,restaurantId,title,Long.parseLong(id));
              }else{
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
              }
-        }if(pathParts.length ==6 && pathParts[3].equals("menu")) {
+        }else if(pathParts.length ==6 && pathParts[3].equals("menu")) {
             String titleEncoded = pathParts[4];
             String title = titleEncoded.replace("%20", " ");
             Long itemId = null;
@@ -103,26 +113,27 @@ public class RestaurantHttpHandler implements HttpHandler {
             }
             String method = exchange.getRequestMethod();
             if(method.equals("DELETE")) {
-                handleRemoveItemFromMenu(exchange,restaurantId,title,itemId);
+                handleRemoveItemFromMenu(exchange,restaurantId,title,itemId,Long.parseLong(id));
             }else{
                 sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                 return;
             }
 
-        }
+        }else if( pathParts.length ==4 && pathParts[3].equals("orders")) {
+             String method = exchange.getRequestMethod();
+             if(method.equals("GET")) {
+                 handleGetOrders(exchange,restaurantId,Long.parseLong(id));
+
+             }else{
+                 sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
+                 return;
+             }
+         }
 
 
 
     }
-    private void handleAddItem(HttpExchange exchange,Long restaurantId) throws IOException {
-        String token = exchange.getRequestHeaders().getFirst("Authorization");
-        String id = JwtUtil.validateToken(token);
-
-        if (id == null) {
-            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-            return;
-        }
-
+    private void handleAddItem(HttpExchange exchange,Long restaurantId,Long id) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         JsonObject foodItem = null;
         try {
@@ -191,17 +202,12 @@ public class RestaurantHttpHandler implements HttpHandler {
                 return;
             }
         }
-        JsonObject response = foodItemController.addItem(foodItemToAdd,Long.parseLong(id),restaurantId);
+        JsonObject response = foodItemController.addItem(foodItemToAdd,id,restaurantId);
          handleResponse(exchange,response);
 
     }
-    private void handleEditItem(HttpExchange exchange,Long itemId, Long restaurantId) throws IOException {
-            String token = exchange.getRequestHeaders().getFirst("Authorization");
-            String id = JwtUtil.validateToken(token);
-            if (id == null) {
-                sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-                return;
-            }
+    private void handleEditItem(HttpExchange exchange,Long itemId, Long restaurantId,Long id) throws IOException {
+
             InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
             FoodItem fooditem = new FoodItem();
             JsonObject newItem = null;
@@ -254,31 +260,19 @@ public class RestaurantHttpHandler implements HttpHandler {
                     return;
                 }
             }
-            JsonObject response = foodItemController.editItem(fooditem,Long.parseLong(id),restaurantId,itemId);
+            JsonObject response = foodItemController.editItem(fooditem,id,restaurantId,itemId);
             handleResponse(exchange,response);
 
             }
 
-    private void handleDeleteItem(HttpExchange exchange,Long itemId, Long restaurantId) throws IOException {
-        String token = exchange.getRequestHeaders().getFirst("Authorization");
-        String id = JwtUtil.validateToken(token);
+    private void handleDeleteItem(HttpExchange exchange,Long itemId, Long restaurantId,Long id) throws IOException {
 
-        if (id == null) {
-            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-            return;
-        }
-
-        JsonObject response = foodItemController.deleteItem(Long.parseLong(id),restaurantId,itemId);
+        JsonObject response = foodItemController.deleteItem(id,restaurantId,itemId);
         handleResponse(exchange,response);
 
     }
-    private void handleAddMenu(HttpExchange exchange, Long restaurantId) throws IOException {
-        String token = exchange.getRequestHeaders().getFirst("Authorization");
-        String id = JwtUtil.validateToken(token);
-        if (id == null) {
-            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-            return;
-        }
+    private void handleAddMenu(HttpExchange exchange, Long restaurantId,Long id) throws IOException {
+
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         JsonObject menu = null;
         try {
@@ -295,31 +289,20 @@ public class RestaurantHttpHandler implements HttpHandler {
             return;
         }
 
-        JsonObject response = menuController.addMenu(menuItem,Long.parseLong(id),restaurantId);
+        JsonObject response = menuController.addMenu(menuItem,id,restaurantId);
         handleResponse(exchange,response);
 
 
     }
-    private void handleDeleteMenu(HttpExchange exchange, Long restaurantId, String title) throws IOException {
-        String token = exchange.getRequestHeaders().getFirst("Authorization");
-        String id = JwtUtil.validateToken(token);
-        if (id == null) {
-            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-        }
+    private void handleDeleteMenu(HttpExchange exchange, Long restaurantId, String title,Long id) throws IOException {
 
-        JsonObject response = menuController.deleteMenu(Long.parseLong(id),restaurantId,title);
+        JsonObject response = menuController.deleteMenu(id,restaurantId,title);
         handleResponse(exchange,response);
 
 
     }
-    private void handleAddOItemToMenu(HttpExchange exchange, Long restaurantId, String title) throws IOException {
-         String token = exchange.getRequestHeaders().getFirst("Authorization");
+    private void handleAddOItemToMenu(HttpExchange exchange, Long restaurantId, String title,Long id) throws IOException {
          Long item_id = null ;
-         String id = JwtUtil.validateToken(token);
-         if (id == null) {
-             sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-             return;
-         }
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         JsonObject object = null;
         try {
@@ -339,21 +322,27 @@ public class RestaurantHttpHandler implements HttpHandler {
             sendResponse(exchange, 400, "{\n  \"error\":\"Invalid item_id\"\n}");
             return;
         }
-        JsonObject response = menuController.addItem(Long.parseLong(id),restaurantId,item_id,title);
+        reader.close();
+        JsonObject response = menuController.addItem(id,restaurantId,item_id,title);
         handleResponse(exchange,response);
 
     }
-    private void handleRemoveItemFromMenu(HttpExchange exchange, Long restaurantId, String title, Long itemId) throws IOException {
-        String token = exchange.getRequestHeaders().getFirst("Authorization");
-        String id = JwtUtil.validateToken(token);
-        if (id == null) {
-            sendResponse(exchange, 401, "{\n  \"error\":\"Unauthorized request\"\n}");
-            return;
-        }
-        JsonObject response = menuController.deleteItem(Long.parseLong(id),restaurantId,title,itemId);
+    private void handleRemoveItemFromMenu(HttpExchange exchange, Long restaurantId, String title, Long itemId,Long id) throws IOException {
+
+        JsonObject response = menuController.deleteItem(id,restaurantId,title,itemId);
         handleResponse(exchange,response);
 
 
+
+    }//status,search,user,courier
+    private void handleGetOrders(HttpExchange exchange, Long restaurantId, Long id) throws IOException {
+        Map<String, String> queryParams = parseQueryParameters(exchange.getRequestURI().getQuery());
+        String status = queryParams.get("status");
+        String search = queryParams.get("search");
+        String user = queryParams.get("user");
+        String courier = queryParams.get("courier");
+        JsonElement response = restaurantOrderController.getOrders(status,search,user,courier,restaurantId,id);
+        handleResponse(exchange,response);
 
     }
 

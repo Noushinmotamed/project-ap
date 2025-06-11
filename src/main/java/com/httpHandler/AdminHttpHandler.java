@@ -21,9 +21,16 @@ import java.util.Map;
 import static com.util.HttpUtil.handleResponse;
 import static com.util.HttpUtil.sendResponse;
 
+
                                                                            // IF ANY QUERY IS INVALID NOT FOUND OR INVALID ???
                                                                           // I AM LETTING ADMIN UPDATE STATUS REGARDLESS OF USER'S TYPE ( IF I HAVE TO HANDLE, THEN WHAT WOULD THE ERROR BE ?)
 
+/**
+ * endpoints : admin/users
+ *            admin/users/{id}/status
+ *            admin/transactions
+ *            admin/orders
+ */
 public class AdminHttpHandler implements HttpHandler {
     private AdminController adminController = new AdminController();
     private AdminDAO adminDAO = new AdminDAO();
@@ -93,6 +100,13 @@ public class AdminHttpHandler implements HttpHandler {
 
         }
     }
+
+    /**
+     *  get list of ALL users
+     *
+     * @param id adminId
+     * @throws IOException not handled
+     */
     private void handleGetUsers(HttpExchange exchange, Long id) throws IOException {
         JsonElement response = adminDAO.getUsers(id);
         handleResponse(exchange,response);
@@ -121,11 +135,19 @@ public class AdminHttpHandler implements HttpHandler {
             sendResponse(exchange,400, "{\n  \"error\":\"Invalid status\"\n}");
             return;
         }
+        reader.close();
         JsonObject response = adminDAO.updateStatus(adminId,userId,status);
         handleResponse(exchange,response);
 
 
     }
+
+    /**
+     *  get list of orders with optional filter
+     *
+     * @param id adminId
+     * @throws IOException not handled
+     */
     private void handleGetOrders(HttpExchange exchange, Long id) throws IOException {
         Map<String, String> queryParams = parseQueryParameters(exchange.getRequestURI().getQuery());
         String search = queryParams.get("search");
@@ -140,6 +162,13 @@ public class AdminHttpHandler implements HttpHandler {
 
 
     }
+
+    /**
+     * get list of transactions with optional filter
+     *
+     * @param id adminId
+     * @throws IOException not handled
+     */
     private void handleGetTransactions(HttpExchange exchange, Long id) throws IOException {
         Map<String, String> queryParams = parseQueryParameters(exchange.getRequestURI().getQuery());
         String search = queryParams.get("search");
@@ -150,7 +179,13 @@ public class AdminHttpHandler implements HttpHandler {
         handleResponse(exchange,response);
 
     }
-    private Map<String, String> parseQueryParameters(String query) {
+
+    /**
+     * method for handling query in path
+     * @param query the query in path
+     * @return map of titles and values
+     */
+    public static Map<String, String> parseQueryParameters(String query) {
         Map<String, String> queryParams = new HashMap<>();
           if(query != null && !query.isEmpty() ) {
               String[] pairs = query.split("&");

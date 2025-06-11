@@ -25,4 +25,8 @@ public class Basket {
         totalPrice = 0;
 
     }
+    public void setUserId(Long userId) {
+
+        this.userId = userId;
+    }
 }

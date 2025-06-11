@@ -21,6 +21,7 @@ public class Main {
         server.createContext("/payment/online", new PaymentHttpHandler());
         server.createContext("/restaurant", new RestaurantHttpHandler());
         server.createContext("/admin",new AdminHttpHandler());
+        server.createContext("/deliveries", new DeliveryHttpHandler());
         server.start();
         System.out.println("Server started on port 8080...");
     }

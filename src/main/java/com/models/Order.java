@@ -125,6 +125,9 @@ public class Order {
     @Column
     private int rating;
 
+    @Column
+    private OrderDeliveryStatus deliveryStatus;
+
 
 
     public Long getUserId() {
@@ -151,5 +154,13 @@ public class Order {
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
     }
+    public Long getVendorId() {
+        return vendorId;
+    }
+    public OrderDeliveryStatus getDeliveryStatus() {
+        return deliveryStatus;
+    }
+    public void setDeliveryStatus(OrderDeliveryStatus deliveryStatus) { this.deliveryStatus = deliveryStatus; }
+    public void setCourierId(Long courierId) { this.courierId = courierId; }
 
 }

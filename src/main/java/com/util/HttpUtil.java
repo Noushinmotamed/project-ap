@@ -39,13 +39,13 @@ public class HttpUtil {
             String error = response.get("error").getAsString();
             if (error.contains("not found")) {
                 sendResponse(exchange, 404, responseString);
-            } else if (error.contains("Invalid")) {
+            } else if (error.contains("Invalid") || error.contains("already exists")) {
                 sendResponse(exchange, 400, responseString);
             } else if (error.contains("Internal server error")) {
                 sendResponse(exchange, 500, responseString);
             } else if (error.contains("Forbidden")) {
                 sendResponse(exchange, 403, responseString);
-            } else if (error.contains("Conflict occurred")) {
+            } else if (error.contains("Conflict occurred") || error.contains("already assigned")) {
                 sendResponse(exchange, 409, responseString);
             }
 
@@ -63,14 +63,16 @@ public class HttpUtil {
 
             if (error.contains("not found")) {
                 sendResponse(exchange, 404, responseString);
-            } else if (error.contains("Invalid")) {
+            } else if (error.contains("Invalid") || error.contains("already exists")) {
                 sendResponse(exchange, 400, responseString);
             } else if (error.contains("Internal server error")) {
                 sendResponse(exchange, 500, responseString);
             } else if (error.contains("Forbidden")) {
                 sendResponse(exchange, 403, responseString);
-            } else if (error.contains("Conflict occurred")) {
+            } else if (error.contains("Conflict occurred") || error.contains("already assigned")) {
                 sendResponse(exchange, 409, responseString);
+            }else{
+                sendResponse(exchange, 500, gson.toJson("Internal server error"));
             }
         } else {
             // Handles both JsonArray and JsonObject responses

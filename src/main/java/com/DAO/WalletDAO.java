@@ -8,8 +8,7 @@ import com.util.HibernateUtil;
 import org.hibernate.Session;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;                                                              //                                                          //
-                                                                       // WHICH STATUS MEAN ORDER HAS BEEN PAID ????
+// WHICH STATUS MEAN ORDER HAS BEEN PAID ????
                                                                        // WHAT IS THE RESPONSE IF WALLET DOESN'T HAVE ENOUGH BALANCE ??
                                                                       // CAN BUYER STILL PAY CANCELLED ORDER ??
                                                                       // I ASSUME YOU SHOULD PAY AFTER THE ORDER STATUS WAS SET TO SUBMITTED ORDER (AND CHANGES TO WAITING VENDOR)
@@ -43,7 +42,7 @@ public class WalletDAO {
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             org.hibernate.Transaction tx = session.beginTransaction();
             Order order = session.get(Order.class, orderId);
-            if(order == null || !order.getUserId().equals(userId)) {
+            if(order == null || !order.getCustomerId().equals(userId)) {
                 response.addProperty("error", "Resource not found");
                 return response;
             }

@@ -113,13 +113,13 @@ public class DeliveryDAO {
                 return response;
             }
             String hql = "SELECT m FROM Order m WHERE 1=1";
-            if( buyerId != null ) hql += " AND m.userId= :userId ";
+            if( buyerId != null ) hql += " AND m.customerId= :customerId ";
             if( restaurantId != null ) hql += " AND m.vendorId= :vendorId ";
             if( id != null ) hql += " AND m.courierId= :courierId ";
 
             Query<Order> query = session.createQuery(hql , Order.class);
 
-            if(buyerId != null) query.setParameter("userId", buyerId);
+            if(buyerId != null) query.setParameter("customerId", buyerId);
             if(restaurantId != null) query.setParameter("vendorId", restaurantId);
             if(id != null) query.setParameter("courierId", id);
 

@@ -11,7 +11,34 @@ import java.util.Set;
 //properties:
 
 
-
+//id:
+//type: integer
+//delivery_address:
+//type: string
+//customer_id:
+//type: integer
+//vendor_id:
+//type: integer
+//coupon_id:
+//type: integer
+//item_ids:
+//type: array
+//items:
+//type: integer
+//raw_price:
+//type: integer
+//tax_fee:
+//type: integer
+//additional_fee:
+//type: integer
+//courier_fee:
+//type: integer
+//pay_price:
+//type: integer
+//courier_id:
+//type: integer
+//status:
+//type: string
 //enum:
 //        - submitted
 //          - unpaid and cancelled
@@ -20,31 +47,10 @@ import java.util.Set;
 //          - finding courier
 //          - on the way
 //          - completed
-
-//required:
-//        - id
-//      - item_id
-//      - rating
-//      - comment
-//      - user_id
-//      - created_at
-//properties:
-//id:
-//type: integer
-//item_id:
-//type: integer
-//rating:
-//type: integer
-//comment:
-//type: string
-//imageBase64:
-//type: array
-//items:
-//type: string
-//user_id:
-//type: integer
 //created_at:
-//type: string                       // ADD NULLABLE = FALSE
+//type: string
+//updated_at:
+//type: string                      // ADD NULLABLE = FALSE
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -56,8 +62,8 @@ public class Order {
     private Long orderId;
 
     @Column
-    @SerializedName("user_id")
-    private Long userId;
+    @SerializedName("customer_id")
+    private Long customerId;
 
     @Column
     @SerializedName("vendor_id")
@@ -67,6 +73,7 @@ public class Order {
     private Long sellerId;
 
     @Column
+    @SerializedName("courier_id")
     private Long courierId;
 
     @ElementCollection
@@ -130,8 +137,8 @@ public class Order {
 
 
 
-    public Long getUserId() {
-        return userId;
+    public Long getCustomerId() {
+        return customerId;
     }
     public void setStatus( OrderStatus status ) {
         this.status = status;

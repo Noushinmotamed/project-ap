@@ -41,13 +41,13 @@ public class RestaurantOrderDAO {
                 return response;
             }
             String hql = "SELECT m FROM Order m WHERE 1=1";
-            if( buyerId != null ) hql += " AND m.userId= :userId ";
+            if( buyerId != null ) hql += " AND m.customerId= :customerId ";
             if( courierId != null ) hql += " AND m.courierId= :courierId ";
             if( restaurantId != null ) hql += " AND m.vendorId= :vendorId ";
             if( status != null ) hql += " AND m.status= :status ";
             Query<Order> query = session.createQuery(hql , Order.class);
 
-            if(buyerId != null) query.setParameter("userId", buyerId);
+            if(buyerId != null) query.setParameter("customerId", buyerId);
             if(courierId != null) query.setParameter("courierId", courierId);
             if(restaurantId != null) query.setParameter("vendorId", restaurantId);
             if( status != null) query.setParameter("status", status);

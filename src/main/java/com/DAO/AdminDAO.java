@@ -89,13 +89,13 @@ public class AdminDAO {
                 return response;
             }
             String hql = "SELECT m FROM Order m WHERE 1=1";
-            if( customerId != null ) hql += " AND m.userId= :userId ";
+            if( customerId != null ) hql += " AND m.customerId= :customerId ";
             if( vendorId != null ) hql += " AND m.vendorId= :vendorId ";
             if( courierId != null ) hql += " AND m.courierId= :courierId ";
             if( orderStatus != null ) hql += " AND m.status= :status ";
             Query<Order> query = session.createQuery(hql , Order.class);
 
-            if(customerId != null) query.setParameter("userId", customerId);
+            if(customerId != null) query.setParameter("customerId", customerId);
             if(vendorId != null) query.setParameter("vendorId", vendorId);
             if(courierId != null) query.setParameter("courierId", courierId);
             if( orderStatus != null) query.setParameter("status", orderStatus);
@@ -147,13 +147,13 @@ public class AdminDAO {
                if( orderId != null ) hql += " AND m.orderId= :orderId ";
                if( method != null ) hql += " AND m.method= :method ";
                if( status!= null ) hql += " AND m.status= :status ";
-               if( customerId != null ) hql += " AND m.userId= :userId ";
+               if( customerId != null ) hql += " AND m.customerId= :cutomerId ";
 
                Query<Transaction> query = session.createQuery(hql , Transaction.class);
                if( orderId != null ) query.setParameter("orderId", orderId);
                if( method != null ) query.setParameter("method", method);
                if( status != null ) query.setParameter("status", status);
-               if (customerId != null ) query.setParameter("userId", customerId);
+               if (customerId != null ) query.setParameter("customerId", customerId);
                List<Transaction> transactions = query.getResultList();
                if(transactions.isEmpty()){
                    response = new JsonObject();

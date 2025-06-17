@@ -2,12 +2,14 @@ package com.DAO;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.models.*;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
 
 import java.time.LocalDateTime;
+import java.util.List;
 // WHICH STATUS MEAN ORDER HAS BEEN PAID ????
                                                                        // WHAT IS THE RESPONSE IF WALLET DOESN'T HAVE ENOUGH BALANCE ??
                                                                       // CAN BUYER STILL PAY CANCELLED ORDER ??
@@ -15,22 +17,28 @@ import java.time.LocalDateTime;
                                                                       // IF INSUFFICIENT BALANCE : DO YOU SEND ERROR OR JUST SEND TRANSACTION WITH FAILED STATUS ?!
 
 public class WalletDAO {
-    public String updateWallet(Long id, double amount) {
+    public JsonObject updateWallet(Long id, double amount) {
+        JsonObject response = new JsonObject();
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
             org.hibernate.Transaction tx = session.beginTransaction();
             Wallet wallet = session.createQuery("from Wallet where userId = :id", Wallet.class).setParameter("id", id).uniqueResult();
 
             if(wallet == null) {
-                return "{ \"error\": \"Resource not found\" }";
+                response.addProperty("error", "Resource not found");
+                return response;
             }
             wallet.addAmount(amount);
             session.update(wallet);
             tx.commit();
-            return "{ \"message\": \"Wallet topped up successfully\" }";
+            response.addProperty("message", "Wallet topped up successfully");
+            response.addProperty("balance", wallet.getBalance());                            // for client
+            return response;
 
 
         }catch(Exception e){
-            return "{ \"error\": \"Internal server error\" }";
+           response.addProperty("error", "Internal server error");
+           return response;
+
         }
     }
     public JsonObject pay(Long orderId,  PaymentMethod method, Long userId) {
@@ -96,7 +104,45 @@ public class WalletDAO {
         }
     }
 
+    public JsonElement getTranHistory(Long id){
+        JsonElement response;
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try(Session session = HibernateUtil.getSessionFactory().openSession()){
+            User buyer = session.get(User.class, id);
+            if(buyer == null) {
+                response = new JsonObject();
+                ((JsonObject) response).addProperty("error", "Resource not found");
+                return response;
+
+            }
+            if(buyer.getRole() != Role.buyer){
+                response = new JsonObject();
+                ((JsonObject) response).addProperty("error", "Forbidden request");
+                return response;
+            }
+            String hql = "FROM Transaction WHERE userId = :userId";
+            List<Transaction> transactions = session.createQuery(hql, Transaction.class)
+                    .setParameter("userId", id)
+                    .getResultList();
+            if(transactions.isEmpty()){
+                response = new JsonObject();
+                ((JsonObject) response).addProperty("error", "Resource not found");
+                return response;
+            }
+            return gson.toJsonTree(transactions);
+
+
+        } catch (Exception e) {
+            response = new JsonObject();
+            ((JsonObject) response).addProperty("error", "Internal server error");
+            return response;
+
+        }
+
+        }
+    }
 
 
 
-}
+
+

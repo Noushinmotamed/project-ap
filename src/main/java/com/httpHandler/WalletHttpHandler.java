@@ -14,8 +14,7 @@ import java.sql.SQLException;
 import com.controller.WalletController;
 import com.util.JwtUtil;
 
-import static com.util.HttpUtil.sendResponse;
-import static com.util.HttpUtil.sendSimpleResponse;
+import static com.util.HttpUtil.*;
 
 public class WalletHttpHandler implements HttpHandler {
 
@@ -55,24 +54,8 @@ public class WalletHttpHandler implements HttpHandler {
                 sendResponse(exchange, 400, "{ \"error\": \"Invalid amount\" }");
                 return;
            }
-            String response = walletController.topUpWallet(userId,amount);
-            if(response.contains("error")) {
-                if(response.contains("Unauthorized")) {
-                    sendResponse(exchange, 401, response);
-
-                }else if(response.contains("Invalid")) {
-                    sendResponse(exchange, 400, response);
-
-                }else if(response.contains("not found")) {
-                    sendResponse(exchange, 404, response);
-
-                }else {
-                    sendResponse(exchange, 500, response);
-                }
-            }else{
-                sendResponse(exchange, 200, response);
-
-            }
+           JsonObject response = walletController.topUpWallet(userId, amount);
+            handleResponse(exchange,response);
 
 
 

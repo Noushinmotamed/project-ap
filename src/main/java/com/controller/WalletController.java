@@ -9,9 +9,11 @@ public class WalletController {
     public WalletController(){
         walletDAO = new WalletDAO();
     }
-    public String topUpWallet(Long id, double amount) {
+    public JsonObject topUpWallet(Long id, double amount) {
+        JsonObject response = new JsonObject();
         if(amount< 0) {
-            return "{ \"error\": \"Invalid amount\" }";
+            response.addProperty("error", "Invalid amount");
+            return response;
         }else{
             return walletDAO.updateWallet(id,amount) ;
 

@@ -61,6 +61,7 @@ public class UserController {
                 return response;
             }
         }
+
         if(input.has("bank_info")){
               JsonObject bankInfo= input.get("bank_info").getAsJsonObject();
               if(bankInfo.has("bank_name")){

@@ -16,6 +16,7 @@ import static com.util.JwtUtil.generateToken;                           // DO I 
 public class UserDAO {
     public JsonObject addUser(User user) {
         JsonObject response = new JsonObject();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction tx = session.beginTransaction();
             if(isPhoneNumberTaken(session,user.getPhone())){
@@ -28,6 +29,7 @@ public class UserDAO {
                 Wallet wallet = new Wallet(user.getId());
                 session.save(basket);
                 session.save(wallet);
+                response.add("wallet",gson.toJsonTree(wallet));             //for client
             }
             tx.commit();
             String token = generateToken(user.getId().toString());
@@ -59,13 +61,23 @@ public class UserDAO {
                 response.addProperty("hint", "Courier not yet approved");
                 return response;
             }
+            Wallet wallet = session.createQuery("from Wallet where userId = :userId", Wallet.class).setParameter("userId", user.getId()).uniqueResult();  //for client
+            if(wallet == null){
+                wallet = new Wallet(user.getId());
+                session.save(wallet);
+            }
             String token = generateToken(user.getId().toString());
             response.addProperty("token", token);
             response.addProperty("message", "User logged in successfully");
             response.add("user",gson.toJsonTree(user));
+            response.add("wallet",gson.toJsonTree(wallet));
             return response;
 
 
+        }catch(Exception e){
+            response.addProperty("error", "Internal server error");
+            e.printStackTrace();
+            return response;
         }
     }
     public JsonObject getUser(Long id) {
@@ -86,6 +98,7 @@ public class UserDAO {
     }
     public JsonObject updateUser(JsonObject input,Long id) {
         JsonObject response = new JsonObject();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try (Session session = HibernateUtil.getSessionFactory().openSession()){
             Transaction tx = session.beginTransaction();
             User user = session.get(User.class, id);
@@ -142,6 +155,7 @@ public class UserDAO {
             session.update(user);
             tx.commit();
             response.addProperty("message", "Profile updated successfully");
+            response.add("user",gson.toJsonTree(user));
             return response;
         }
 

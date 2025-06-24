@@ -16,15 +16,19 @@ public class Restaurant {
     @Column
    private String logoBase64;
     @Column(nullable = false)
-   private String tax_fee;
+   private int tax_fee;
     @Column(nullable = false)
    private int additional_fee;
     @Column(nullable = false)
     private Long ownerId;
-    public String getTax_fee() {
+    public int getTax_fee() {
         return tax_fee;
     }
     public Long getOwnerId() {
         return ownerId;
+    }
+
+    public int getAdditionalFee() {
+        return additional_fee;
     }
 }

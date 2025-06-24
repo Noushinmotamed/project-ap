@@ -20,7 +20,7 @@ public class FoodItem {
     private String description;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @SerializedName("food_id")
+    @SerializedName("id")
     @Column( name = "foodid")
     private Long foodId;
 

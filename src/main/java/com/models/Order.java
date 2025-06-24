@@ -124,15 +124,6 @@ public class Order {
 
 
     @Column
-    private String imageBase64;
-
-    @Column
-    private String comment;
-
-    @Column
-    private int rating;
-
-    @Column
     private OrderDeliveryStatus deliveryStatus;
 
 
@@ -169,5 +160,19 @@ public class Order {
     }
     public void setDeliveryStatus(OrderDeliveryStatus deliveryStatus) { this.deliveryStatus = deliveryStatus; }
     public void setCourierId(Long courierId) { this.courierId = courierId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public void setRawPrice(Integer rawPrice) { this.rawPrice = rawPrice; }
+    public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
+    public void setItemIds(Set<Long> itemIds) { this.itemIds = itemIds; }
+    public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+    public void setVendorId(Long vendorId) { this.vendorId = vendorId; }
+    public void setTaxFee(Integer taxFee) { this.taxFee = taxFee; }
+    public void setAdditionalFee(Integer additionalFee) { this.additionalFee = additionalFee; }
 
+    public void setPayPrice(int payPrice) {
+        this.payPrice = payPrice;
+    }
+
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt;
+    }
 }

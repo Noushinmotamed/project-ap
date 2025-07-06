@@ -25,12 +25,7 @@ public class HttpUtil {
 
     }
 
-    public static void sendSimpleResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
-        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(response.getBytes());
-        }
-    }
+
 
     public static void handleResponse(HttpExchange exchange, JsonObject response) throws IOException {
         String responseString = new GsonBuilder().setPrettyPrinting().create().toJson(response);

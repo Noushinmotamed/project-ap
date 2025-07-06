@@ -7,7 +7,6 @@ import com.models.*;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import com.util.JwtUtil.*;
 
 import java.util.Objects;
 
@@ -56,7 +55,7 @@ public class UserDAO {
                 response.addProperty("error", "Invalid password");
                 return response;
             }
-            if(user.getRole() == Role.courier && user.getCourierStatus() != CourierStatus.approved){
+            if((user.getRole() == Role.courier || user.getRole() == Role.seller) && user.getLoginStatus() != CourierStatus.approved){
                 response.addProperty("error", "Forbidden request");
                 response.addProperty("hint", "Courier not yet approved");
                 return response;

@@ -175,4 +175,5 @@ public class Order {
 
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt;
     }
+   public Long getCourierId() { return courierId; }
 }

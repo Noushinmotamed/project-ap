@@ -52,7 +52,7 @@ public class User {
      @Column
     private String explanation;                     //only for owner
     @Column
-    private CourierStatus courierStatus;             // only for courier
+    private CourierStatus loginStatus;             // only for courier AND SELLER
 
 
     public User() {}
@@ -79,7 +79,7 @@ public class User {
     public void setAddress(String address) {
         this.address = address;
     }
-    public CourierStatus getCourierStatus() { return courierStatus; }
+    public CourierStatus getLoginStatus() { return loginStatus; }
     public Long getId() {
         return id;
     }
@@ -111,7 +111,7 @@ public class User {
     public void setImageBase64(String profileImageBase64) { this.profileImageBase64 = profileImageBase64; }
     public void setBrandName(String brandName) { this.brandName = brandName; }
     public void setExplanation(String explanation) { this.explanation = explanation; }
-    public void setCourierStatus(CourierStatus courierStatus) { this.courierStatus = courierStatus; }
+    public void setLoginStatus(CourierStatus courierStatus) { this.loginStatus = courierStatus; }
 
 }
 

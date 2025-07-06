@@ -32,12 +32,12 @@ public class DeliveryController {
     public JsonElement getOrdersHistory(String search, String vendor, String user, Long id){
         JsonObject response = new JsonObject();
         Long itemId = null, restaurantId = null, buyerId = null;
+        String name = null;
         if( search != null  ){
             try{
                 itemId = Long.parseLong(search);
             }catch(NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+                name = search;
             }
         }
         if(vendor != null  ){
@@ -56,6 +56,6 @@ public class DeliveryController {
                 return response;
             }
         }
-        return deliveryDAO.getOrdersHistory(itemId,restaurantId,buyerId,id);
+        return deliveryDAO.getOrdersHistory(itemId,restaurantId,buyerId,id,name);
     }
 }

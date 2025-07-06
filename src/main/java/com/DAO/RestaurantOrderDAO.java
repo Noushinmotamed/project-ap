@@ -10,11 +10,14 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;                          //if you don't own the restaurant forbidden or not found ?
 import org.hibernate.query.Query;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class RestaurantOrderDAO {
-    public JsonElement getOrders(OrderStatus status,Long itemId,Long buyerId, Long courierId,Long restaurantId, Long sellerId) {
+    public JsonElement getOrders(OrderStatus status,Long itemId,Long buyerId, Long courierId,Long restaurantId, Long sellerId,String name) {
         JsonElement response = null;
+        ArrayList<Long> itemIds = new ArrayList<>();
         Gson gson = new GsonBuilder().registerTypeAdapter(OrderStatus.class, new AdminDAO.OrderStatusSerializer()).setPrettyPrinting().create();
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
@@ -58,7 +61,28 @@ public class RestaurantOrderDAO {
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
-            if(itemId != null )orders.removeIf(order -> !order.getItemIds().contains(itemId));                  //delete if doesn't include the item
+            if(itemId != null ) {
+                orders.removeIf(order -> !order.getItemIds().contains(itemId));
+            }else if(name!= null && !name.isEmpty()){
+                List<FoodItem> foodItems = session.createQuery("FROM FoodItem WHERE name = :name AND vendorId = vendorId ", FoodItem.class)
+                        .setParameter("name", name)
+                        .setParameter("vendorId", restaurantId)
+                        .list();
+                if(foodItems==null || foodItems.isEmpty()){
+                    response = new JsonObject();
+                    ((JsonObject) response).addProperty("error", "Resource not found");
+                    System.out.println("didn't find item");
+                    return response;
+                }
+                for(FoodItem foodItem : foodItems){
+                    itemIds.add(foodItem.getId());
+                }
+
+                orders.removeIf(order ->
+                        Collections.disjoint(order.getItemIds(), itemIds)
+                    );
+
+            }
             if(orders.isEmpty()){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");

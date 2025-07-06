@@ -2,8 +2,6 @@ package com.models;
 
 import com.google.gson.annotations.SerializedName;
 import jakarta.persistence.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -48,9 +46,6 @@ public class FoodItem {
     @Column(name = "categories")  // Must match the keyword column name
     private List<String> keywords = new ArrayList<>();
 
-    @OneToMany(mappedBy = "foodItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Rating> ratings;
-
     @ElementCollection
     @CollectionTable(
             name = "menusList",
@@ -65,7 +60,7 @@ public class FoodItem {
     public void setName(String name) {
         this.name = name;
     }
-    public Long getFoodId() {
+    public Long getId() {
         return foodId;
     }
     public void setFoodId(Long foodId) {
@@ -103,14 +98,6 @@ public class FoodItem {
     public void setKeywords(List<String> categories) {
         this.keywords = categories;
     }
-    public List<Rating> getRatings() {
-        return ratings;
-    }
-
-    public void setRatings(ArrayList<Rating> ratings) {
-        this.ratings = ratings;
-    }
-
     public void setDescription(String description) {
         this.description = description;
     }
@@ -135,5 +122,3 @@ public class FoodItem {
 
 
 }
-
-

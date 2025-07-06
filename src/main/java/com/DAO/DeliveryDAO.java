@@ -11,6 +11,8 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;                                                       //I ASSUMED IF DELIVERY HASN'T YET REACHED THE FINDING COURIER STAGE IT'S FORBIDDEN
 
 public class DeliveryDAO {
@@ -25,7 +27,7 @@ public class DeliveryDAO {
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
-            if(courier.getRole() != Role.courier || courier.getCourierStatus() != CourierStatus.approved){
+            if(courier.getRole() != Role.courier || courier.getLoginStatus() != CourierStatus.approved){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Forbidden request");
                 return response;
@@ -56,7 +58,7 @@ public class DeliveryDAO {
                 response.addProperty("error", "Resource not found");
                 return response;
             }
-            if(courier.getRole() != Role.courier || courier.getCourierStatus() != CourierStatus.approved){
+            if(courier.getRole() != Role.courier || courier.getLoginStatus() != CourierStatus.approved){
                 response.addProperty("error", "Forbidden request");
                 return response;
             }
@@ -96,8 +98,9 @@ public class DeliveryDAO {
         }
 
     }
-    public JsonElement getOrdersHistory(Long itemId,Long restaurantId,Long buyerId,Long id){
+    public JsonElement getOrdersHistory(Long itemId,Long restaurantId,Long buyerId,Long id,String name){
         JsonElement response;
+        ArrayList<Long> itemIds = new ArrayList<>();
         Gson gson = new GsonBuilder().registerTypeAdapter(OrderStatus.class, new AdminDAO.OrderStatusSerializer()).setPrettyPrinting().create();
         try(Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction tx = session.beginTransaction();
@@ -107,7 +110,7 @@ public class DeliveryDAO {
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
-            if(courier.getRole() != Role.courier || courier.getCourierStatus() != CourierStatus.approved){
+            if(courier.getRole() != Role.courier || courier.getLoginStatus() != CourierStatus.approved){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Forbidden request");
                 return response;
@@ -129,7 +132,26 @@ public class DeliveryDAO {
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
-            if(itemId != null )orders.removeIf(order -> !order.getItemIds().contains(itemId));
+            if(itemId != null ) {
+                orders.removeIf(order -> !order.getItemIds().contains(itemId));
+            }else if(name != null && !name.isEmpty()){
+                List<FoodItem> foodItems = session.createQuery("FROM FoodItem WHERE name = :name", FoodItem.class)
+                        .setParameter("name", name)
+                        .list();
+                if(foodItems==null || foodItems.isEmpty()){
+                    response = new JsonObject();
+                    ((JsonObject) response).addProperty("error", "Resource not found");
+                    System.out.println("didn't find item");
+                    return response;
+                }
+                for(FoodItem foodItem : foodItems){
+                    itemIds.add(foodItem.getId());
+                }
+
+                orders.removeIf(order ->
+                        Collections.disjoint(order.getItemIds(), itemIds)
+                );
+            }
             if(orders.isEmpty()){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");

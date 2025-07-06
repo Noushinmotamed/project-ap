@@ -10,7 +10,7 @@ import com.models.TransactionStatus;
 
 
 /**
- *  search -> itemIds in order
+ *  search -> itemName in order
  *  search -> orderId in transaction
  */
 
@@ -18,38 +18,36 @@ public class AdminController {
     private AdminDAO adminDAO = new AdminDAO();
     public JsonElement getOrders(Long id, String search, String vendor, String courier, String customer, String status) {
         Long itemId = null,vendorId = null,courierId= null,customerId= null;
+        String vendorName =null, courierName = null, customerName = null;
         JsonObject response = new JsonObject();
         OrderStatus orderStatus = null;
+        String name = null;
         if( search != null){
             try{
                 itemId = Long.parseLong(search);
             }catch(NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+               name = search;
             }
         }
         if(vendor!= null){
             try{
                 vendorId = Long.parseLong(vendor);
             }catch(NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+              vendorName = vendor;
             }
         }
         if(courier!= null){
             try{
                 courierId = Long.parseLong(courier);
             }catch(NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+               courierName = courier;
             }
         }
         if(customer!= null){
             try {
                 customerId = Long.parseLong(customer);
             }catch(NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+                customerName = customer;
             }
         }
         if(status != null) {
@@ -65,7 +63,7 @@ public class AdminController {
                 return response;
             }
         }
-        return adminDAO.getOrders(id,itemId,vendorId,courierId,customerId,orderStatus);
+        return adminDAO.getOrders(id,itemId,vendorId,courierId,customerId,orderStatus,name,vendorName,courierName,customerName);
 
 
     }
@@ -74,6 +72,7 @@ public class AdminController {
         PaymentMethod paymentMethod = null;
         TransactionStatus transactionStatus = null;
         JsonObject response = new JsonObject();
+        String userName = null;
         if(search != null){
             try{
                 orderId = Long.parseLong(search);
@@ -86,8 +85,7 @@ public class AdminController {
             try{
                 customerId = Long.parseLong(user);
             }catch (NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+                userName = user;
             }
         }
         if(method != null){
@@ -106,6 +104,6 @@ public class AdminController {
                 return response;
             }
         }
-        return adminDAO.getTransactions(id,customerId,orderId,paymentMethod,transactionStatus);
+        return adminDAO.getTransactions(id,customerId,orderId,paymentMethod,transactionStatus,userName);
     }
 }

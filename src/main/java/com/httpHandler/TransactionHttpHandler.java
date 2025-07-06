@@ -16,7 +16,7 @@ public class TransactionHttpHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        if(exchange.getRequestMethod().equals("GET") && exchange.getRequestURI().getPath().equals("/transaction")){
+        if(exchange.getRequestMethod().equals("GET") && exchange.getRequestURI().getPath().equals("/transactions")){
             String token = exchange.getRequestHeaders().getFirst("Authorization");
             String id = JwtUtil.validateToken(token);
             if (id == null) {
@@ -24,7 +24,7 @@ public class TransactionHttpHandler implements HttpHandler {
                 return;
             }
             getTransactionsHistory(exchange,Long.parseLong(id));
-        }else if(!exchange.getRequestURI().getPath().equals("/transaction")){
+        }else if(!exchange.getRequestURI().getPath().equals("/transactions")){
                      sendResponse(exchange,404,"{\n  \"error\":\"Resource not found\"\n}");
 
         }else{

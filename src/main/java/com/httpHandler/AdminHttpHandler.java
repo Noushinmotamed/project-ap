@@ -187,15 +187,28 @@ public class AdminHttpHandler implements HttpHandler {
      */
     public static Map<String, String> parseQueryParameters(String query) {
         Map<String, String> queryParams = new HashMap<>();
-          if(query != null && !query.isEmpty() ) {
-              String[] pairs = query.split("&");
-              for (String pair : pairs) {
-                  String[] keyValue = pair.split("=");
-                  if(keyValue.length == 2) {
-                      queryParams.put(keyValue[0], keyValue[1]);
-                  }
-              }
-          }
-          return queryParams;
+        if (query != null && !query.isEmpty()) {
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=", 2); // Split on first "=" only
+                String key = keyValue[0];
+                String value = keyValue.length > 1 ? keyValue[1] : "";
+
+                // Decode only spaces (%20 → " ", + → " ")
+                key = decodeSpaces(key);
+                value = decodeSpaces(value);
+
+                queryParams.put(key, value);
+            }
+        }
+        return queryParams;
+    }
+
+    private static String decodeSpaces(String str) {
+        // Replace %20 with space
+        str = str.replace("%20", " ");
+        // Replace + with space (optional, since some systems use + for spaces)
+        str = str.replace("+", " ");
+        return str;
     }
 }

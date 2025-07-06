@@ -10,13 +10,13 @@ public class RestaurantOrderController {
     public JsonElement getOrders(String status,String search,String user,String courier,Long restaurantId,Long id){
         JsonObject response = new JsonObject();
         Long itemId = null, buyerId = null, courierId = null;
+        String name=null;
         OrderStatus orderStatus = null;
         if(search != null){
             try{
                 itemId = Long.parseLong(search);
             }catch(NumberFormatException e){
-                response.addProperty("error", "Resource not found");
-                return response;
+                name = search;
             }
         }
         if(user != null){
@@ -47,7 +47,7 @@ public class RestaurantOrderController {
                 return response;
             }
         }
-        return restaurantOrderDAO.getOrders(orderStatus,itemId,buyerId,courierId,restaurantId,id);
+        return restaurantOrderDAO.getOrders(orderStatus,itemId,buyerId,courierId,restaurantId,id,name);
 
     }
 }

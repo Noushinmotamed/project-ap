@@ -55,7 +55,7 @@ public class UserDAO {
                 response.addProperty("error", "Invalid password");
                 return response;
             }
-            if((user.getRole() == Role.courier || user.getRole() == Role.seller) && user.getLoginStatus() != CourierStatus.approved){
+            if((user.getRole() == Role.courier || user.getRole() == Role.seller) && (user.getLoginStatus()==null || user.getLoginStatus() != CourierStatus.approved)){
                 response.addProperty("error", "Forbidden request");
                 response.addProperty("hint", "Courier not yet approved");
                 return response;

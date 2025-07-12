@@ -91,6 +91,8 @@ public class WalletDAO {
                 transaction.setStatus(status);
                 transaction.setOrderId(orderId);
                 transaction.setMethod(method);
+                order.setStatus(OrderStatus.waitingVendor);
+                session.update(order);
                 session.save(transaction);
                 tx.commit();
                   return gson.toJsonTree(transaction).getAsJsonObject();
@@ -113,7 +115,6 @@ public class WalletDAO {
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
-
             }
             if(buyer.getRole() != Role.buyer){
                 response = new JsonObject();

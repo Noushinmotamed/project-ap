@@ -1,11 +1,14 @@
 package com.httpHandler;
 
+import com.DAO.RestaurantDAO;
 import com.controller.FoodItemController;
 import com.controller.MenuController;
 import com.controller.RestaurantOrderController;
 import com.google.gson.*;
 import com.models.FoodItem;
 import com.models.Menu;
+import com.models.OrderVendorStatus;
+import com.models.Restaurant;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.util.HttpUtil;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.controller.UserController.isValidNumber;
 import static com.httpHandler.AdminHttpHandler.parseQueryParameters;
 import static com.util.HttpUtil.handleResponse;
 import static com.util.HttpUtil.sendResponse;
@@ -31,6 +35,7 @@ public class RestaurantHttpHandler implements HttpHandler {
     private final FoodItemController foodItemController= new FoodItemController();
     private final MenuController menuController= new MenuController();
     private final RestaurantOrderController restaurantOrderController= new RestaurantOrderController();
+    private final RestaurantDAO restaurantDAO= new RestaurantDAO();
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -43,19 +48,39 @@ public class RestaurantHttpHandler implements HttpHandler {
          String path = exchange.getRequestURI().getPath();
          String[] pathParts = path.split("/");
          Long restaurantId = null;
+         if(path.equals("/restaurants")) {
+            String method = exchange.getRequestMethod();
+            if(method.equals("POST")){
+                handleAddRestaurant(exchange,Long.parseLong(id));
+
+            }else{
+                sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
+                return;
+            }
+         }else if(path.equals("/restaurants/mine")){
+             String method = exchange.getRequestMethod();
+             if(method.equals("GET")){
+                 handleGetRestaurant(exchange,Long.parseLong(id));
+             }else{
+                 sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
+                 return;
+             }
+         }
 
          if(pathParts.length < 3) {
              sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
              System.out.println("path len less than 3");
              return;
          }
-         try{
-              restaurantId = Long.parseLong(pathParts[2]);
-         } catch (NumberFormatException e) {
-            sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
-             System.out.println("restaurant id invalid in path");
-            return;
-         }
+        if(!path.startsWith("/restaurants/orders")){
+            try {
+                restaurantId = Long.parseLong(pathParts[2]);
+            } catch (NumberFormatException e) {
+                sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
+                System.out.println("restaurant id invalid in path");
+                return;
+            }
+        }
          if(pathParts.length ==4 && pathParts[3].equals("item")) {
              String method = exchange.getRequestMethod();
              if(method.equals("POST")) {
@@ -124,6 +149,37 @@ public class RestaurantHttpHandler implements HttpHandler {
              if(method.equals("GET")) {
                  handleGetOrders(exchange,restaurantId,Long.parseLong(id));
 
+             }else{
+                 sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
+                 return;
+             }
+         }else if(pathParts.length == 4 && path.startsWith("/restaurants/orders")) {
+             String method = exchange.getRequestMethod();
+             if(method.equals("PATCH")) {
+                 try{
+                     Long orderId = Long.parseLong(pathParts[3]);
+                     handleUpdateOrderStatus(exchange,Long.parseLong(id),orderId);
+                 } catch (NumberFormatException e) {
+                     sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
+                     return;
+                 }
+
+             }else{
+                 sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
+                 return;
+             }
+         }else if(pathParts.length ==3 && path.startsWith("/restaurants/")) {
+             String method = exchange.getRequestMethod();
+             if(method.equals("PUT")) {
+                 Long vendorId =null;
+                 try{
+                     vendorId = Long.parseLong(pathParts[2]);
+                 } catch (NumberFormatException e) {
+                     sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
+                     return;
+                 }
+                 handleUpdateRestaurant(exchange,Long.parseLong(id),vendorId);
+                 return;
              }else{
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
@@ -344,6 +400,128 @@ public class RestaurantHttpHandler implements HttpHandler {
         JsonElement response = restaurantOrderController.getOrders(status,search,user,courier,restaurantId,id);
         handleResponse(exchange,response);
 
+    }
+    private void handleAddRestaurant(HttpExchange exchange, Long id) throws IOException {
+        try(InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)) {
+            JsonObject input = new Gson().fromJson(reader, JsonObject.class);
+            Restaurant restaurant = new Restaurant();
+            if (input.has("name")) {
+                restaurant.setName(input.get("name").getAsString());
+            } else {
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid name\"\n}");
+                return;
+            }
+            if (input.has("address")) {
+                restaurant.setAddress(input.get("address").getAsString());
+            } else {
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid address\"\n}");
+                return;
+            }
+            if (input.has("phone")) {
+                restaurant.setPhone(input.get("phone").getAsString());
+                if (!isValidNumber(input.get("phone").getAsString())) {
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid phone\"\n}");
+                    return;
+                }
+            } else {
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid phone\"\n}");
+                return;
+            }
+            if (input.has("logoBase64")) {
+                restaurant.setLogoBase64(input.get("logoBase64").getAsString());
+            }
+            if (input.has("tax_fee")) {
+                try {
+                    int taxFee = Integer.parseInt(input.get("tax_fee").getAsString());
+                    if (taxFee < 0) {
+                        sendResponse(exchange, 400, "{\n  \"error\":\"Invalid tax_fee\"\n}");
+                        return;
+                    }
+                    restaurant.setTax_fee(taxFee);
+                } catch (IllegalStateException | ClassCastException | NumberFormatException e) {
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid tax_fee\"\n}");
+                    return;
+                }
+            } else {
+                restaurant.setTax_fee(0);
+            }
+            if (input.has("additional_fee")) {
+                try {
+                    int additionalFee = Integer.parseInt(input.get("additional_fee").getAsString());
+                    if (additionalFee < 0) {
+                        sendResponse(exchange, 400, "{\n  \"error\":\"Invalid additional_fee\"\n}");
+                        return;
+                    }
+                    restaurant.setAdditional_fee(additionalFee);
+                } catch (IllegalStateException | ClassCastException | NumberFormatException e) {
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid additional_fee\"\n}");
+                    return;
+                }
+            } else {
+                restaurant.setAdditional_fee(0);
+            }
+            JsonObject response = restaurantDAO.addRestaurant(restaurant, id);
+            handleResponse(exchange, response);
+        }
+    }
+    private void handleGetRestaurant(HttpExchange exchange, Long id) throws IOException {
+        JsonObject response = restaurantDAO.getRestaurant(id);
+        handleResponse(exchange,response);
+    }
+    private void handleUpdateRestaurant(HttpExchange exchange, Long id,Long vendorId) throws IOException {
+        try(InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)){
+            JsonObject input = new Gson().fromJson(reader, JsonObject.class);
+            if(input.has("phone")){
+                if(!isValidNumber(input.get("phone").getAsString())){
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid phone\"\n}");
+                    return;
+                }
+            }
+            if(input.has("tax_fee")){
+                try{
+                    int taxFee = Integer.parseInt(input.get("tax_fee").getAsString());
+                    if(taxFee < 0){
+                        sendResponse(exchange, 400, "{\n  \"error\":\"Invalid tax_fee\"\n}");
+                    }
+                } catch (NumberFormatException e) {
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid tax_fee\"\n}");
+                    return;
+                }
+            }
+            if(input.has("additional_fee")){
+                try{
+                    int additionalFee = Integer.parseInt(input.get("additional_fee").getAsString());
+                    if(additionalFee < 0){
+                        sendResponse(exchange, 400, "{\n  \"error\":\"Invalid additional_fee\"\n}");
+                        return;
+                    }
+                }catch (NumberFormatException e) {
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid additional_fee\"\n}");
+                    return;
+                }
+            }
+            JsonObject response = restaurantDAO.updateRestaurant(input,id,vendorId);
+            handleResponse(exchange,response);
+        }
+    }
+    private void handleUpdateOrderStatus(HttpExchange exchange, Long id,Long orderId) throws IOException {
+        try(InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)){
+            JsonObject input = new Gson().fromJson(reader, JsonObject.class);
+            OrderVendorStatus status;
+            if(input.has("status")){
+                try{
+                    status = OrderVendorStatus.valueOf(input.get("status").getAsString());
+                }catch (IllegalArgumentException e) {
+                    sendResponse(exchange, 400, "{\n  \"error\":\"Invalid status\"\n}");
+                    return;
+                }
+            }else{
+                sendResponse(exchange, 400, "{\n  \"error\":\"Invalid status\"\n}");
+                return;
+            }
+            JsonObject response = restaurantDAO.changeOrderStatus(id,orderId,status);
+            handleResponse(exchange,response);
+        }
     }
 
 }

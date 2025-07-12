@@ -29,6 +29,7 @@
         
         <!-- Caching -->
         <property name="hibernate.cache.use_second_level_cache">false</property>
+
         
         <!-- Entity mappings (UPDATED to models package) -->
         <mapping class="com.models.User"/>

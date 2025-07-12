@@ -1,71 +1,69 @@
 package com.models;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "Review")
+@Table(name = "reviews")
 public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long reviewId;
+    private Long id;
 
     @Column(nullable = false)
     private int rating;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String text;
 
-    private String imageUrl;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "review_images", joinColumns = @JoinColumn(name = "review_id"))
+    @Column(name = "image_url", length = 1024)
+    private List<String> imageUrls = new ArrayList<>();
+
+    @Column(nullable = false, name = "user_id")
+    private Long userId;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "food_item_id", nullable = false)
+    private FoodItem foodItem;
 
     @Column(nullable = false)
-    private long userid;
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private long foodid;
-
-    // Getters
-    public Long getReviewId() {
-        return reviewId;
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
     }
+    @Column(nullable = false, name = "food_id_legacy")
+    private Long foodId;
 
-    public int getRating() {
-        return rating;
-    }
+    public void setFoodId(Long foodId) { this.foodId = foodId; }
+    public Review() {}
 
-    public String getText() {
-        return text;
-    }
+    //  Getters & Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public int getRating() { return rating; }
+    public void setRating(int rating) { this.rating = rating; }
+    public String getText() { return text; }
+    public void setText(String text) { this.text = text; }
 
-    public String getImageUrl() {
-        return imageUrl;
-    }
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 
-    public long getUserid() {
-        return userid;
-    }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public FoodItem getFoodItem() { return foodItem; }
+    public void setFoodItem(FoodItem foodItem) { this.foodItem = foodItem; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public long getFoodId() {
-        return foodid;
-    }
-
-    // Setters
-    public void setRating(int rating) {
-        this.rating = rating;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public void setUser(long userid) {
-        this.userid = userid;
-    }
-
-    public void setFood(long foodid) {
-        this.foodid = foodid;
+    @Transient
+    public Long getFoodId() {
+        return (this.foodItem != null) ? this.foodItem.getId() : null;
     }
 }

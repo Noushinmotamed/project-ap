@@ -125,6 +125,8 @@ public class Order {
 
     @Column
     private OrderDeliveryStatus deliveryStatus;
+    @Column
+    private OrderVendorStatus vendorStatus;
 
 
 
@@ -176,4 +178,9 @@ public class Order {
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt;
     }
    public Long getCourierId() { return courierId; }
+
+    public OrderVendorStatus getVendorStatus() {
+        return vendorStatus;
+    }
+    public void setVendorStatus(OrderVendorStatus vendorStatus) { this.vendorStatus = vendorStatus; }
 }

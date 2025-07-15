@@ -128,6 +128,10 @@ public class Order {
     @Column
     private OrderVendorStatus vendorStatus;
 
+    @Column
+    private String userName;
+
+
 
 
     public Long getCustomerId() {
@@ -183,4 +187,8 @@ public class Order {
         return vendorStatus;
     }
     public void setVendorStatus(OrderVendorStatus vendorStatus) { this.vendorStatus = vendorStatus; }
+
+    public void setUserName(String fullName) {
+        this.userName = fullName;
+    }
 }

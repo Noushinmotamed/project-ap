@@ -66,6 +66,7 @@ public class MyOrderDAO {
             order.setPayPrice(payPrice);
             order.setStatus(OrderStatus.submitted);
             order.setCreatedAt(LocalDateTime.now().toString());
+            order.setUserName(user.getFullName());
             session.save(order);
             for(JsonElement element : itemIdsArray){
                 int itemId = element.getAsInt();

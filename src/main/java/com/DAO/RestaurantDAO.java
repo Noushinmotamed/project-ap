@@ -147,11 +147,12 @@ public class RestaurantDAO {
             switch(status){
                 case OrderVendorStatus.accepted:
                     order.setStatus(OrderStatus.waitingVendor);
+                    break;
                     case OrderVendorStatus.rejected:
                         order.setStatus(OrderStatus.cancelled);
                         break;
                 case OrderVendorStatus.served:
-                    order.setStatus(OrderStatus.waitingVendor);
+                    order.setStatus(OrderStatus.findingCourier);
                     break;
             }
             session.update(order);

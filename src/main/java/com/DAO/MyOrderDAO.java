@@ -13,7 +13,7 @@ import java.util.*;
 
 public class MyOrderDAO {
     public JsonObject submitOrder(Long id, Long vendorId, String deliveryAddress, JsonArray itemIdsArray) {
-        int rawPrice=0,taxFee=0,additionalFee=0,payPrice=0;
+        double rawPrice=0,taxFee=0,additionalFee=0,payPrice=0;
         JsonObject response = new JsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try(Session session = HibernateUtil.getSessionFactory().openSession()){
@@ -34,20 +34,26 @@ public class MyOrderDAO {
             }
             taxFee = restaurant.getTax_fee();
             additionalFee = restaurant.getAdditionalFee();
-            for(JsonElement element : itemIdsArray){
-                int itemId = element.getAsInt();
-                FoodItem item = session.createQuery(
-                                "FROM FoodItem WHERE id = :itemId AND vendorId = :vendorId", FoodItem.class)
-                        .setParameter("itemId", itemId)
-                        .setParameter("vendorId", vendorId)
-                        .uniqueResult();
-                if(item==null){
-                    response.addProperty("error", "Resource not found");
-                    System.out.println("item with id " + itemId + " not found");
-                    return response;
+            try {
+                for (JsonElement element : itemIdsArray) {
+                    int itemId = element.getAsJsonObject().get("item_id").getAsInt();
+                    FoodItem item = session.createQuery(
+                                    "FROM FoodItem WHERE id = :itemId AND vendorId = :vendorId", FoodItem.class)
+                            .setParameter("itemId", itemId)
+                            .setParameter("vendorId", vendorId)
+                            .uniqueResult();
+                    if (item == null) {
+                        response.addProperty("error", "Resource not found");
+                        System.out.println("item with id " + itemId + " not found");
+                        return response;
 
+                    }
+                    int quantity = element.getAsJsonObject().get("quantity").getAsInt();
+                    rawPrice += item.getPrice()*quantity;
                 }
-                rawPrice+=item.getPrice();
+            }catch (Exception e){
+                response.addProperty("error", "Invalid items");
+                return response;
             }
             Order order = new Order();
             order.setCustomerId(id);
@@ -55,21 +61,23 @@ public class MyOrderDAO {
             order.setDeliveryAddress(deliveryAddress);
             Set<Long> itemIds = new HashSet<>();
             for (JsonElement el : itemIdsArray) {
-                long ID = el.getAsLong();
+                long ID = el.getAsJsonObject().get("item_id").getAsLong();
                 itemIds.add(ID);
             }
             order.setItemIds(itemIds);
-            order.setRawPrice(rawPrice);
-            order.setTaxFee(taxFee);
-            order.setAdditionalFee(additionalFee);
-            payPrice = rawPrice + rawPrice * (taxFee/100) + rawPrice * (additionalFee/100);
-            order.setPayPrice(payPrice);
+            order.setRawPrice((int) rawPrice);
+            order.setTaxFee((int) taxFee);
+            order.setAdditionalFee((int) additionalFee);
+            payPrice = rawPrice + rawPrice *(taxFee/100) + rawPrice * (additionalFee/100);
+            System.out.println(payPrice);
+            System.out.println(taxFee);
+            order.setPayPrice((int) payPrice);
             order.setStatus(OrderStatus.submitted);
             order.setCreatedAt(LocalDateTime.now().toString());
             order.setUserName(user.getFullName());
             session.save(order);
             for(JsonElement element : itemIdsArray){
-                int itemId = element.getAsInt();
+                int itemId = element.getAsJsonObject().get("item_id").getAsInt();
                 session.createQuery(
                                 "DELETE FROM BasketItem WHERE buyer_id = :buyerId AND food_item_id = :foodItemId")
                         .setParameter("buyerId", id)
@@ -87,6 +95,7 @@ public class MyOrderDAO {
 
         }catch(Exception e){
             response.addProperty("error", "Internal server error");
+            e.printStackTrace();
             return response;
         }
     }

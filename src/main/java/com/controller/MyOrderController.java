@@ -17,12 +17,12 @@ public class MyOrderController {
         Long vendor_id=null;
         String deliveryAddress = request.get("delivery_address").getAsString();
         try {
-            JsonArray items = request.getAsJsonArray("items");
-            for (JsonElement element : items) {
-                JsonObject itemObj = element.getAsJsonObject();
-                int itemId = itemObj.get("item_id").getAsInt();
-                itemIdsArray.add(itemId);
-            }
+            itemIdsArray = request.getAsJsonArray("items");
+//            for (JsonElement element : items) {
+//                JsonObject itemObj = element.getAsJsonObject();
+//                int itemId = itemObj.get("item_id").getAsInt();
+//                itemIdsArray.add(itemId);
+//            }
         } catch (Exception e) {
             response.addProperty("error", "Invalid items");
             return response;

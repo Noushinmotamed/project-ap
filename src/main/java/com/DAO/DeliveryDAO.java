@@ -27,7 +27,7 @@ public class DeliveryDAO {
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
-            if(courier.getRole() != Role.courier || courier.getLoginStatus() != CourierStatus.approved){
+            if(courier.getRole() != Role.courier || courier.getCourierStatus() != CourierStatus.approved){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Forbidden request");
                 return response;
@@ -58,7 +58,7 @@ public class DeliveryDAO {
                 response.addProperty("error", "Resource not found");
                 return response;
             }
-            if(courier.getRole() != Role.courier || courier.getLoginStatus() != CourierStatus.approved){
+            if(courier.getRole() != Role.courier || courier.getCourierStatus() != CourierStatus.approved){
                 response.addProperty("error", "Forbidden request");
                 return response;
             }
@@ -110,7 +110,7 @@ public class DeliveryDAO {
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
-            if(courier.getRole() != Role.courier || courier.getLoginStatus() != CourierStatus.approved){
+            if(courier.getRole() != Role.courier || courier.getCourierStatus() != CourierStatus.approved){
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Forbidden request");
                 return response;

@@ -9,7 +9,6 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;                                 //IF VENDOR IS NOT YOYRS, NOT FOUND OR FORBIDDEN ?
                                                                  // I ASSUME THAT ACCEPTED -> STILL WAITING VENDOR, REJECTED-> CANCELLED, SERVED -> ON THE WAY
 
-import java.util.Objects;
 
 public class RestaurantDAO {
     public JsonObject addRestaurant(Restaurant restaurant, Long id){
@@ -26,7 +25,7 @@ public class RestaurantDAO {
                 response.addProperty("error", "Forbidden request");
                 return response;
             }
-            if(user.getLoginStatus()!= CourierStatus.approved){
+            if(user.getCourierStatus()!= CourierStatus.approved){
                 response.addProperty("error", "Forbidden request");
                 return response;
             }

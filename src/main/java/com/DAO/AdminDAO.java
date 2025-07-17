@@ -64,7 +64,7 @@ public class AdminDAO {
                 response.addProperty("error", "Resource not found");
                 return response;
             }
-            user.setLoginStatus(status);
+            user.setCourierStatus(status);
             session.update(user);
             tx.commit();
             response.addProperty("message", "Status updated");

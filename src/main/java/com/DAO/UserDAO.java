@@ -55,8 +55,9 @@ public class UserDAO {
                 response.addProperty("error", "Invalid password");
                 return response;
             }
-            if((user.getRole() == Role.courier || user.getRole() == Role.seller) && (user.getLoginStatus()==null || user.getLoginStatus() != CourierStatus.approved)){
+            if((user.getRole() == Role.courier || user.getRole() == Role.seller) && (user.getCourierStatus()==null || user.getCourierStatus() == CourierStatus.rejected)){
                 response.addProperty("error", "Forbidden request");
+                System.out.println(user.getCourierStatus());
                 response.addProperty("hint", "Courier not yet approved");
                 return response;
             }

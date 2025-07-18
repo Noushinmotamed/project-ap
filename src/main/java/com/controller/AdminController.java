@@ -106,4 +106,10 @@ public class AdminController {
         }
         return adminDAO.getTransactions(id,customerId,orderId,paymentMethod,transactionStatus,userName);
     }
+
+
+
+    public JsonObject getRestaurantForUser(Long adminId, Long userId) {
+        return adminDAO.getRestaurantByOwnerId(userId);
+    }
 }

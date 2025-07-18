@@ -13,6 +13,8 @@ import org.hibernate.query.Query;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import com.google.gson.JsonArray;
+import com.models.FoodItem;
 
 public class RestaurantOrderDAO {
     public JsonElement getOrders(OrderStatus status,Long itemId,Long buyerId, Long courierId,Long restaurantId, Long sellerId,String name) {
@@ -99,4 +101,58 @@ public class RestaurantOrderDAO {
             return response;
         }
     }
+
+
+    public JsonObject getOrderDetailsForSeller(Long orderId, Long sellerId) {
+        JsonObject response = new JsonObject();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            Order order = session.get(Order.class, orderId);
+            if (order == null) {
+                response.addProperty("error", "Order not found");
+                return response;
+            }
+
+            Restaurant restaurant = session.createQuery("from Restaurant where ownerId = :sellerId", Restaurant.class)
+                    .setParameter("sellerId", sellerId)
+                    .uniqueResult();
+            if (restaurant == null || !order.getVendorId().equals(restaurant.getId())) {
+                response.addProperty("error", "Forbidden: This order does not belong to your restaurant.");
+                return response;
+            }
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonObject orderJson = gson.toJsonTree(order).getAsJsonObject();
+
+            JsonArray itemsArray = new JsonArray();
+            if (order.getItemIds() != null) {
+                for (Long itemId : order.getItemIds()) {
+                    FoodItem foodItem = session.get(FoodItem.class, itemId);
+                    if (foodItem != null) {
+                        JsonObject itemJson = new JsonObject();
+                        itemJson.addProperty("foodName", foodItem.getName());
+                        itemJson.addProperty("finalPrice", foodItem.getPrice());
+                        itemsArray.add(itemJson);
+                    }
+                }
+            }
+            orderJson.add("items", itemsArray);
+
+            User customer = session.get(User.class, order.getCustomerId());
+            if (customer != null) {
+                JsonObject userJson = new JsonObject();
+                userJson.addProperty("fullName", customer.getFullName());
+                userJson.addProperty("phone", customer.getPhone());
+                orderJson.add("user", userJson);
+            }
+
+            return orderJson;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.addProperty("error", "Internal Server Error");
+            return response;
+        }
+    }
+
 }

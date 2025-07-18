@@ -25,6 +25,8 @@ public class Main {
         server.createContext("/transactions", new TransactionHttpHandler());
         server.createContext("/basket", new BasketHttpHandler());
         server.createContext("/items", new MySearchHttpHandler());
+        server.createContext("/foods", new FoodHttpHandler());
+        server.createContext("/menus", new MenuHttpHandler());
         server.createContext("/vendors", new MySearchHttpHandler());
         server.createContext("/orders", new MyOrderHttpHandler());
         server.createContext("/ratings", new RatingHttpHandler());

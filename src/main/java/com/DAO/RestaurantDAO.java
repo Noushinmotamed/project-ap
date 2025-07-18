@@ -7,7 +7,7 @@ import com.models.*;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;                                 //IF VENDOR IS NOT YOYRS, NOT FOUND OR FORBIDDEN ?
-                                                                 // I ASSUME THAT ACCEPTED -> STILL WAITING VENDOR, REJECTED-> CANCELLED, SERVED -> ON THE WAY
+// I ASSUME THAT ACCEPTED -> STILL WAITING VENDOR, REJECTED-> CANCELLED, SERVED -> ON THE WAY
 
 
 public class RestaurantDAO {
@@ -147,9 +147,9 @@ public class RestaurantDAO {
                 case OrderVendorStatus.accepted:
                     order.setStatus(OrderStatus.waitingVendor);
                     break;
-                    case OrderVendorStatus.rejected:
-                        order.setStatus(OrderStatus.cancelled);
-                        break;
+                case OrderVendorStatus.rejected:
+                    order.setStatus(OrderStatus.cancelled);
+                    break;
                 case OrderVendorStatus.served:
                     order.setStatus(OrderStatus.findingCourier);
                     break;
@@ -165,4 +165,14 @@ public class RestaurantDAO {
             return response;
         }
     }
+
+    public Restaurant findById(Long restaurantId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(Restaurant.class, restaurantId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 }

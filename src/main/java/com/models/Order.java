@@ -131,6 +131,9 @@ public class Order {
     @Column
     private String userName;
 
+    @Column(name = "quantity_data", columnDefinition = "TEXT")
+    private String quantityData;
+
 
 
 
@@ -190,5 +193,17 @@ public class Order {
 
     public void setUserName(String fullName) {
         this.userName = fullName;
+    }
+
+    public String getQuantityData() {
+        return quantityData;
+    }
+
+    public void setQuantityData(String quantityData) {
+        this.quantityData = quantityData;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
     }
 }

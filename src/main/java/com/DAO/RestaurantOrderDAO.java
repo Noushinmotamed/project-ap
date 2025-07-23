@@ -13,6 +13,7 @@ import org.hibernate.query.Query;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import com.google.gson.JsonArray;
 import com.models.FoodItem;
 
@@ -136,9 +137,38 @@ public class RestaurantOrderDAO {
                     }
                 }
             }
-            orderJson.add("items", itemsArray);
+            try {
+                String quantityJson = order.getQuantityData();
+                if (quantityJson != null && !quantityJson.isEmpty()) {
+
+                    Map<Long, Integer> quantityMap = new Gson().fromJson(quantityJson,
+                            new com.google.gson.reflect.TypeToken<Map<Long, Integer>>(){}.getType());
+
+                    JsonArray newItemsArray = new JsonArray();
+                    for (Long itemId : order.getItemIds()) {
+                        FoodItem foodItem = session.get(FoodItem.class, itemId);
+                        if (foodItem != null) {
+                            JsonObject itemJson = new JsonObject();
+                            itemJson.addProperty("foodName", foodItem.getName());
+                            itemJson.addProperty("finalPrice", foodItem.getPrice());
+
+                            int quantity = quantityMap.getOrDefault(itemId, 1);
+                            itemJson.addProperty("quantity", quantity);
+
+                            newItemsArray.add(itemJson);
+                        }
+                    }
+                    orderJson.add("items", newItemsArray);
+                } else {
+                    orderJson.add("items", itemsArray);
+                }
+            } catch (Exception e) {
+                orderJson.add("items", itemsArray);
+                System.err.println("Warning: Could not enrich items with quantity. " + e.getMessage());
+            }
 
             User customer = session.get(User.class, order.getCustomerId());
+
             if (customer != null) {
                 JsonObject userJson = new JsonObject();
                 userJson.addProperty("fullName", customer.getFullName());
@@ -154,5 +184,4 @@ public class RestaurantOrderDAO {
             return response;
         }
     }
-
 }

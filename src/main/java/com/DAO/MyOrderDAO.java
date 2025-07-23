@@ -59,12 +59,20 @@ public class MyOrderDAO {
             order.setCustomerId(id);
             order.setVendorId(vendorId);
             order.setDeliveryAddress(deliveryAddress);
+            order.setVendorName(restaurant.getName());
             Set<Long> itemIds = new HashSet<>();
+            Set<String> itemNames = new HashSet<>();
             for (JsonElement el : itemIdsArray) {
                 long ID = el.getAsJsonObject().get("item_id").getAsLong();
                 itemIds.add(ID);
+                FoodItem food = session.get(FoodItem.class, ID);
+                if(food!=null) {
+                    String name = food.getName();
+                    itemNames.add(name);
+                }
             }
             order.setItemIds(itemIds);
+            order.setItemNames(itemNames);
             order.setRawPrice((int) rawPrice);
             order.setTaxFee((int) taxFee);
             order.setAdditionalFee((int) additionalFee);

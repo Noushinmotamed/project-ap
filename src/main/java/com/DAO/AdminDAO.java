@@ -272,6 +272,29 @@ public class AdminDAO {
                return response;
            }
     }
+    public JsonObject getRestaurantByOwnerId(Long ownerId) {
+        JsonObject response = new JsonObject();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Restaurant restaurant = session.createQuery("FROM Restaurant WHERE ownerId = :ownerId", Restaurant.class)
+                    .setParameter("ownerId", ownerId)
+                    .uniqueResult();
+
+            if (restaurant == null) {
+                response.addProperty("error", "Restaurant not found for this seller.");
+                return response;
+
+            }
+            return gson.toJsonTree(restaurant).getAsJsonObject();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.addProperty("error", "Internal server error while fetching restaurant.");
+            return response;
+        }
+
+
+    }
 
     /**
      * gson class for adjusting OrderStatus enum value ( example : unpaidAndCancelled -> unpaid and cancelled)

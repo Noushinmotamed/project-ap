@@ -5,52 +5,7 @@ import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Set;
-//order:
-//type: object
-//required: [id, delivery_address, customer_id, item_ids, vendor_id, raw_price, tax_fee, courier_fee, additional_fee, pay_price, status, created_at, updated_at]
-//properties:
 
-
-//id:
-//type: integer
-//delivery_address:
-//type: string
-//customer_id:
-//type: integer
-//vendor_id:
-//type: integer
-//coupon_id:
-//type: integer
-//item_ids:
-//type: array
-//items:
-//type: integer
-//raw_price:
-//type: integer
-//tax_fee:
-//type: integer
-//additional_fee:
-//type: integer
-//courier_fee:
-//type: integer
-//pay_price:
-//type: integer
-//courier_id:
-//type: integer
-//status:
-//type: string
-//enum:
-//        - submitted
-//          - unpaid and cancelled
-//          - waiting vendor
-//          - cancelled
-//          - finding courier
-//          - on the way
-//          - completed
-//created_at:
-//type: string
-//updated_at:
-//type: string                      // ADD NULLABLE = FALSE
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -84,6 +39,15 @@ public class Order {
     @Column
     @SerializedName("item_ids")
     private Set<Long> itemIds = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(
+            name = "orderItemNamesList",
+            joinColumns = @JoinColumn(name = "order_id")
+    )
+    @Column
+    @SerializedName("item_names")
+    private Set<String> itemNames = new HashSet<>();
 
     @Column
     @SerializedName("delivery_address")
@@ -130,6 +94,10 @@ public class Order {
 
     @Column
     private String userName;
+
+    @Column
+    @SerializedName("vendor_name")
+    private String vendorName;
 
 
 
@@ -191,4 +159,6 @@ public class Order {
     public void setUserName(String fullName) {
         this.userName = fullName;
     }
+    public void setVendorName(String vendorName) { this.vendorName = vendorName; }
+    public void setItemNames(Set<String> itemNames) { this.itemNames = itemNames; }
 }

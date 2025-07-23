@@ -9,6 +9,9 @@ import com.util.HibernateUtil;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import com.google.gson.JsonArray;
+import java.util.List;
+
 
 
 public class FoodItemDAO {
@@ -34,6 +37,7 @@ public class FoodItemDAO {
                response.addProperty("error", "Forbidden request");
                return response;
             }
+            foodItem.setVendorName(restaurant.getName());
             session.save(foodItem);
             tx.commit();
             return gson.toJsonTree(foodItem).getAsJsonObject();
@@ -154,5 +158,38 @@ public class FoodItemDAO {
             return response;
     }
 
+    }
+    public JsonArray getAllItemsByRestaurantId(Long restaurantId) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<FoodItem> items = session.createQuery("from FoodItem where vendorId = :restaurantId", FoodItem.class)
+                    .setParameter("restaurantId", restaurantId)
+                    .list();
+
+            return gson.toJsonTree(items).getAsJsonArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("error", "Internal server error while fetching food items.");
+            JsonArray errorArray = new JsonArray();
+            errorArray.add(errorResponse);
+            return errorArray;
+        }
+    }
+
+    public FoodItem findById(Long foodId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            FoodItem item = session.get(FoodItem.class, foodId);
+
+            if (item != null) {
+                Hibernate.initialize(item.getMenuId());
+            }
+
+            return item;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

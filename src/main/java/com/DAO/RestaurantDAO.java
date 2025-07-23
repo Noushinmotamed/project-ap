@@ -35,6 +35,7 @@ public class RestaurantDAO {
                 return response;
             }
             restaurant.setOwnerId(id);
+            user.setBrandName(restaurant.getName());
             session.save(restaurant);
             tx.commit();
             return gson.toJsonTree(restaurant).getAsJsonObject();
@@ -163,6 +164,14 @@ public class RestaurantDAO {
         }catch(Exception e){
             response.addProperty("error", "Internal server error");
             return response;
+        }
+    }
+    public Restaurant findById(Long restaurantId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(Restaurant.class, restaurantId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

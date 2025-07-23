@@ -2,18 +2,19 @@ package com.DAO;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.models.FoodItem;
 import com.models.Menu;
 import com.models.Restaurant;
 import com.models.User;
 import com.util.HibernateUtil;
-import jakarta.persistence.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-
+import org.hibernate.query.Query;
 
 import java.util.List;
+
 
 public class MenuDAO {
     public JsonObject addMenu(Menu menu, Long userId, Long restaurantId) {
@@ -155,9 +156,9 @@ public class MenuDAO {
 
 
         } catch (Exception e) {
-             response.addProperty("error", "Internal server error");
-             e.printStackTrace();
-             return response;
+            response.addProperty("error", "Internal server error");
+            e.printStackTrace();
+            return response;
 
         }
     }
@@ -214,4 +215,59 @@ public class MenuDAO {
             return response;
         }
     }
+
+    public JsonArray getAllMenusByRestaurantId(Long restaurantId) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<Menu> menus = session.createQuery("from Menu where restaurantId = :restaurantId", Menu.class)
+                    .setParameter("restaurantId", restaurantId)
+                    .list();
+
+            return gson.toJsonTree(menus).getAsJsonArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("error", "Internal server error while fetching menus.");
+            JsonArray errorArray = new JsonArray();
+            errorArray.add(errorResponse);
+            return errorArray;
+        }
+    }
+
+
+
+    public JsonArray getFoodItemsByMenuId(Long menuId) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Menu menu = session.get(Menu.class, menuId);
+            if (menu == null) {
+                JsonObject errorResponse = new JsonObject();
+                errorResponse.addProperty("error", "Menu not found");
+                JsonArray errorArray = new JsonArray();
+                errorArray.add(errorResponse);
+                return errorArray;
+            }
+
+            String sql = "SELECT fi.* FROM fooditems fi " +
+                    "JOIN menusList ml ON fi.foodid = ml.foodItem_Id " +
+                    "WHERE ml.menu_id = :menuId";
+
+            Query<FoodItem> query = session.createNativeQuery(sql, FoodItem.class);
+            query.setParameter("menuId", menuId);
+
+            List<FoodItem> items = query.getResultList();
+
+            return gson.toJsonTree(items).getAsJsonArray();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JsonObject errorResponse = new JsonObject();
+            errorResponse.addProperty("error", "Internal server error while fetching food items for menu.");
+            JsonArray errorArray = new JsonArray();
+            errorArray.add(errorResponse);
+            return errorArray;
+        }
+    }
+
+
 }

@@ -54,6 +54,10 @@ public class FoodItem {
     @Column(name = "menu_id")
     private Set<Long> menuId = new HashSet<>();
 
+    @Column
+    @SerializedName("vendor_name")
+    private String vendorName;
+
     public String getName() {
         return name;
     }
@@ -118,7 +122,7 @@ public class FoodItem {
     }
 
 
-
-
-
+    public void setVendorName(String name) {
+        this.vendorName = name;
+    }
 }

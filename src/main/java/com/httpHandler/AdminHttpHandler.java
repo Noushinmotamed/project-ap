@@ -76,7 +76,50 @@ public class AdminHttpHandler implements HttpHandler {
             }
 
 
-        } else {
+        } else if (path.matches("^/admin/users/\\d+/restaurant$")) {
+
+
+
+            if (method.equals("GET")) {
+
+
+                String[] pathParts = path.split("/");
+
+
+                Long userId;
+
+
+                try {
+
+
+                    userId = Long.parseLong(pathParts[3]);
+
+
+                } catch (NumberFormatException e) {
+
+
+                    sendResponse(exchange, 400, "{\"error\":\"Invalid User ID format\"}");
+
+
+                    return;
+
+
+                }
+
+
+                handleGetRestaurantForUser(exchange, adminId, userId);
+
+
+            } else {
+
+
+                sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
+
+
+            }
+
+
+            return;}else {
             String[] pathParts = path.split("/");
             if(pathParts.length == 5 && pathParts[2].equals("users") && pathParts[4].equals("status")) {
             if(!method.equals("PATCH")) {
@@ -202,6 +245,17 @@ public class AdminHttpHandler implements HttpHandler {
             }
         }
         return queryParams;
+    }
+    private void handleGetRestaurantForUser(HttpExchange exchange, Long adminId, Long userId) throws IOException {
+
+
+
+        JsonObject response = adminController.getRestaurantForUser(adminId, userId);
+
+
+        handleResponse(exchange, response);
+
+
     }
 
     private static String decodeSpaces(String str) {

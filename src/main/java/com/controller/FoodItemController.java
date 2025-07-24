@@ -22,7 +22,7 @@ public class FoodItemController {
             response.addProperty("error", "Invalid supply");
             return response;
         }
-        if(!foodItem.getVendorId().equals(restaurantId)) {
+        if(!foodItem.getVendorId().equals(userId)) {
             response.addProperty("error", "Invalid vendor_id");
             return response;
         }

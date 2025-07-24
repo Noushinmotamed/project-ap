@@ -145,14 +145,14 @@ public class RestaurantDAO {
                 response.addProperty("error", "Conflict occurred");
                 return response;
             }
-            if(order.getStatus() != OrderStatus.waitingVendor){
+            if(order.getStatus() != OrderStatus.waitingVendor && order.getStatus() != OrderStatus.submitted){
                 response.addProperty("error", "Forbidden request");
                 return response;
             }
             order.setVendorStatus(status);
             switch(status){
                 case OrderVendorStatus.accepted:
-                    order.setStatus(OrderStatus.waitingVendor);
+                    order.setStatus(OrderStatus.findingCourier);
                     break;
                 case OrderVendorStatus.rejected:
                     order.setStatus(OrderStatus.cancelled);

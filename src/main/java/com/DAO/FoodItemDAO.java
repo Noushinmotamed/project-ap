@@ -44,6 +44,7 @@ public class FoodItemDAO {
             return gson.toJsonTree(foodItem).getAsJsonObject();
 
         } catch (Exception e) {
+            e.printStackTrace();
            response.addProperty("error", "Internal server error");
            return response;
         }

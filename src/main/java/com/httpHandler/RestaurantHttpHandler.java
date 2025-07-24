@@ -262,7 +262,7 @@ public class RestaurantHttpHandler implements HttpHandler {
 
         }
         try{
-            foodItemToAdd.setVendorId(foodItem.get("vendor_id").getAsLong());
+            foodItemToAdd.setSellerId(foodItem.get("vendor_id").getAsLong());
         }catch(IllegalStateException | NullPointerException e) {
             sendResponse(exchange, 400, "{\n  \"error\":\"Invalid vendor_id\"\n}");
             e.printStackTrace();

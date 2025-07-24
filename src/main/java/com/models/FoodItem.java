@@ -35,6 +35,7 @@ public class FoodItem {
     @Column( nullable = false )
     private int supply;
 
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "foodcategories",  // PostgreSQL converts to lowercase unless quoted
@@ -124,5 +125,9 @@ public class FoodItem {
 
     public void setVendorName(String name) {
         this.vendorName = name;
+    }
+
+    public void setSellerId(long vendorId) {
+        this.vendorId = vendorId;
     }
 }

@@ -49,6 +49,10 @@ public class MyOrderDAO {
 
                     }
                     int quantity = element.getAsJsonObject().get("quantity").getAsInt();
+                    if(quantity<0 || quantity>item.getSupply()){
+                        response.addProperty("error", "Invalid quantity");
+                        return response;
+                    }
                     rawPrice += item.getPrice()*quantity;
                 }
             }catch (Exception e){

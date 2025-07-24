@@ -34,13 +34,13 @@ public class HttpUtil {
             String error = response.get("error").getAsString();
             if (error.contains("not found")) {
                 sendResponse(exchange, 404, responseString);
-            } else if (error.contains("Invalid") || error.contains("already exists")) {
+            } else if (error.contains("Invalid") ) {
                 sendResponse(exchange, 400, responseString);
             } else if (error.contains("Internal server error")) {
                 sendResponse(exchange, 500, responseString);
             } else if (error.contains("Forbidden")) {
                 sendResponse(exchange, 403, responseString);
-            } else if (error.contains("Conflict occurred") || error.contains("already assigned")) {
+            } else if (error.contains("Conflict occurred") || error.contains("already assigned")|| error.contains("already exists")) {
                 sendResponse(exchange, 409, responseString);
             }
 

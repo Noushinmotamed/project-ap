@@ -32,16 +32,21 @@ public class DeliveryDAO {
                 ((JsonObject) response).addProperty("error", "Forbidden request");
                 return response;
             }
-            String hql = "FROM Order WHERE status = :status";
-            OrderStatus status = OrderStatus.findingCourier;
+            String hql = "FROM Order WHERE (status = :findingStatus) OR " +
+                    "(status = :onTheWayStatus AND courierId = :courierId)";
+
             List<Order> orders = session.createQuery(hql, Order.class)
-                    .setParameter("status", status)
+                    .setParameter("findingStatus", OrderStatus.findingCourier)
+                    .setParameter("onTheWayStatus", OrderStatus.onTheWay)
+                    .setParameter("courierId", id)
                     .getResultList();
-            if(orders.isEmpty()){
+
+            if (orders.isEmpty()) {
                 response = new JsonObject();
                 ((JsonObject) response).addProperty("error", "Resource not found");
                 return response;
             }
+
             return gson.toJsonTree(orders);
 
 
@@ -68,10 +73,10 @@ public class DeliveryDAO {
                 return response;
             }
             if( order.getStatus() != OrderStatus.findingCourier){
-                if(order.getDeliveryStatus() != null){
+                if(order.getDeliveryStatus() != null && !(order.getStatus()== OrderStatus.onTheWay && order.getCourierId().equals(id))){
                     response.addProperty("error", "Delivery already assigned");
                     return response;
-                }else{
+                }else if(order.getDeliveryStatus() == null){
                     response.addProperty("error", "Forbidden request");
                     return response;
                 }

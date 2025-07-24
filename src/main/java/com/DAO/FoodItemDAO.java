@@ -2,6 +2,7 @@ package com.DAO;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.models.FoodItem;
 import com.models.*;
@@ -9,9 +10,9 @@ import com.util.HibernateUtil;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import com.google.gson.JsonArray;
-import java.util.List;
+import org.hibernate.Hibernate;
 
+import java.util.List;
 
 
 public class FoodItemDAO {
@@ -37,7 +38,7 @@ public class FoodItemDAO {
                response.addProperty("error", "Forbidden request");
                return response;
             }
-            foodItem.setVendorName(restaurant.getName());
+            foodItem.setVendorId(restaurantId);
             session.save(foodItem);
             tx.commit();
             return gson.toJsonTree(foodItem).getAsJsonObject();
@@ -159,6 +160,7 @@ public class FoodItemDAO {
     }
 
     }
+
     public JsonArray getAllItemsByRestaurantId(Long restaurantId) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {

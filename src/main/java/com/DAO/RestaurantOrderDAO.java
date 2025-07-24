@@ -1,6 +1,9 @@
 package com.DAO;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.models.*;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
@@ -10,6 +13,9 @@ import org.hibernate.query.Query;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import com.google.gson.JsonArray;
+import com.models.FoodItem;
 
 public class RestaurantOrderDAO {
     public JsonElement getOrders(OrderStatus status,Long itemId,Long buyerId, Long courierId,Long restaurantId, Long sellerId,String name) {
@@ -96,9 +102,12 @@ public class RestaurantOrderDAO {
             return response;
         }
     }
+
+
     public JsonObject getOrderDetailsForSeller(Long orderId, Long sellerId) {
         JsonObject response = new JsonObject();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
             Order order = session.get(Order.class, orderId);
             if (order == null) {
                 response.addProperty("error", "Order not found");
@@ -109,84 +118,70 @@ public class RestaurantOrderDAO {
                     .setParameter("sellerId", sellerId)
                     .uniqueResult();
             if (restaurant == null || !order.getVendorId().equals(restaurant.getId())) {
-                response.addProperty("error", "Forbidden request");
+                response.addProperty("error", "Forbidden: This order does not belong to your restaurant.");
                 return response;
             }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             JsonObject orderJson = gson.toJsonTree(order).getAsJsonObject();
-            JsonArray itemsArray = new JsonArray();
 
+            JsonArray itemsArray = new JsonArray();
             if (order.getItemIds() != null) {
                 for (Long itemId : order.getItemIds()) {
                     FoodItem foodItem = session.get(FoodItem.class, itemId);
                     if (foodItem != null) {
-
                         JsonObject itemJson = new JsonObject();
                         itemJson.addProperty("foodName", foodItem.getName());
                         itemJson.addProperty("finalPrice", foodItem.getPrice());
                         itemsArray.add(itemJson);
-
-
                     }
-
-
                 }
-
-
             }
+            try {
+                String quantityJson = order.getQuantityData();
+                if (quantityJson != null && !quantityJson.isEmpty()) {
 
+                    Map<Long, Integer> quantityMap = new Gson().fromJson(quantityJson,
+                            new com.google.gson.reflect.TypeToken<Map<Long, Integer>>(){}.getType());
 
-            orderJson.add("items", itemsArray);
+                    JsonArray newItemsArray = new JsonArray();
+                    for (Long itemId : order.getItemIds()) {
+                        FoodItem foodItem = session.get(FoodItem.class, itemId);
+                        if (foodItem != null) {
+                            JsonObject itemJson = new JsonObject();
+                            itemJson.addProperty("foodName", foodItem.getName());
+                            itemJson.addProperty("finalPrice", foodItem.getPrice());
 
+                            int quantity = quantityMap.getOrDefault(itemId, 1);
+                            itemJson.addProperty("quantity", quantity);
 
-
-
+                            newItemsArray.add(itemJson);
+                        }
+                    }
+                    orderJson.add("items", newItemsArray);
+                } else {
+                    orderJson.add("items", itemsArray);
+                }
+            } catch (Exception e) {
+                orderJson.add("items", itemsArray);
+                System.err.println("Warning: Could not enrich items with quantity. " + e.getMessage());
+            }
 
             User customer = session.get(User.class, order.getCustomerId());
 
-
             if (customer != null) {
-
-
                 JsonObject userJson = new JsonObject();
-
-
                 userJson.addProperty("fullName", customer.getFullName());
-
-
                 userJson.addProperty("phone", customer.getPhone());
-
-
                 orderJson.add("user", userJson);
-
-
             }
-
-
-
-
 
             return orderJson;
 
-
-
-
-
         } catch (Exception e) {
-
-
             e.printStackTrace();
-
-
             response.addProperty("error", "Internal Server Error");
-
-
             return response;
-
-
         }
-
-
     }
 }

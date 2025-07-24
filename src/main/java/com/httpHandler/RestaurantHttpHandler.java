@@ -1,6 +1,9 @@
 package com.httpHandler;
 
+import com.DAO.FoodItemDAO;
+import com.DAO.MenuDAO;
 import com.DAO.RestaurantDAO;
+import com.DAO.RestaurantOrderDAO;
 import com.controller.FoodItemController;
 import com.controller.MenuController;
 import com.controller.RestaurantOrderController;
@@ -13,6 +16,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.util.HttpUtil;
 import com.util.JwtUtil;
+
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
@@ -20,14 +25,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import static com.controller.UserController.isValidNumber;
 import static com.httpHandler.AdminHttpHandler.parseQueryParameters;
 import static com.util.HttpUtil.handleResponse;
 import static com.util.HttpUtil.sendResponse;
-import com.DAO.FoodItemDAO;
-import com.DAO.MenuDAO;
-import com.DAO.RestaurantDAO;
-import com.DAO.RestaurantOrderDAO;
 
 
                                                                                    // if something in path has the wrong format, Invalid or Not found ?
@@ -40,8 +42,6 @@ public class RestaurantHttpHandler implements HttpHandler {
     private final FoodItemDAO foodItemDAO = new FoodItemDAO();
     private final MenuDAO menuDAO = new MenuDAO();
     private final RestaurantOrderDAO restaurantOrderDAO = new RestaurantOrderDAO();
-
-
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -71,7 +71,9 @@ public class RestaurantHttpHandler implements HttpHandler {
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
              }
-         } else if (path.matches("^/restaurants/orders/\\d+$")) {
+         }
+
+         else if (path.matches("^/restaurants/orders/\\d+$")) {
              String method = exchange.getRequestMethod();
              if (method.equals("GET")) {
                  try {
@@ -84,18 +86,17 @@ public class RestaurantHttpHandler implements HttpHandler {
                  try {
                      Long orderId = Long.parseLong(pathParts[3]);
                      handleUpdateOrderStatus(exchange, Long.parseLong(id), orderId);
-
                  } catch (NumberFormatException e) {
                      sendResponse(exchange, 400, "{\"error\":\"Invalid Order ID format\"}");
                  }
-
              } else {
                  sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
              }
              return;
-         } else if (path.matches("^/restaurants/\\d+/items$")) {
-             String method = exchange.getRequestMethod();
+         }
 
+         else if (path.matches("^/restaurants/\\d+/items$")) {
+             String method = exchange.getRequestMethod();
              if (method.equals("GET")) {
                  restaurantId = Long.parseLong(path.split("/")[2]);
                  handleGetRestaurantItems(exchange, restaurantId, Long.parseLong(id));
@@ -103,18 +104,17 @@ public class RestaurantHttpHandler implements HttpHandler {
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
              }
              return;
-         } else if (path.matches("^/restaurants/\\d+/menus$")) {
+         }
+         else if (path.matches("^/restaurants/\\d+/menus$")) {
              String method = exchange.getRequestMethod();
              if (method.equals("GET")) {
                  restaurantId = Long.parseLong(path.split("/")[2]);
                  handleGetRestaurantMenus(exchange, restaurantId, Long.parseLong(id));
-
              } else {
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
              }
              return;
          }
-
          if(pathParts.length < 3) {
              sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
              System.out.println("path len less than 3");
@@ -201,21 +201,6 @@ public class RestaurantHttpHandler implements HttpHandler {
                  sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
                  return;
              }
-         }else if(pathParts.length == 4 && path.startsWith("/restaurants/orders")) {
-             String method = exchange.getRequestMethod();
-             if(method.equals("PATCH")) {
-                 try{
-                     Long orderId = Long.parseLong(pathParts[3]);
-                     handleUpdateOrderStatus(exchange,Long.parseLong(id),orderId);
-                 } catch (NumberFormatException e) {
-                     sendResponse(exchange, 404, "{\n  \"error\":\"Resource not found\"\n}");
-                     return;
-                 }
-
-             }else{
-                 sendResponse(exchange, 405, "{\n  \"error\":\"Method not allowed\"\n}");
-                 return;
-             }
          }else if(pathParts.length ==3 && path.startsWith("/restaurants/")) {
              String method = exchange.getRequestMethod();
              if(method.equals("PUT")) {
@@ -233,10 +218,9 @@ public class RestaurantHttpHandler implements HttpHandler {
                  return;
              }
          }
-
-
-
     }
+
+
     private void handleAddItem(HttpExchange exchange,Long restaurantId,Long id) throws IOException {
         InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
         JsonObject foodItem = null;
@@ -571,25 +555,25 @@ public class RestaurantHttpHandler implements HttpHandler {
             handleResponse(exchange,response);
         }
     }
-    private void handleGetRestaurantItems(HttpExchange exchange, Long restaurantId, Long userId) throws IOException {
 
+
+    private void handleGetRestaurantItems(HttpExchange exchange, Long restaurantId, Long userId) throws IOException {
         Restaurant restaurant = restaurantDAO.findById(restaurantId);
+
         if (restaurant == null) {
             sendResponse(exchange, 404, "{\"error\": \"Restaurant with ID " + restaurantId + " not found\"}");
             return;
         }
 
         if (!restaurant.getOwnerId().equals(userId)) {
-
             sendResponse(exchange, 403, "{\"error\": \"Forbidden: You do not have permission to access this restaurant's items\"}");
             return;
-
         }
+
         JsonArray items = foodItemDAO.getAllItemsByRestaurantId(restaurantId);
         handleResponse(exchange, items);
-
-
     }
+
 
     private void handleGetRestaurantMenus(HttpExchange exchange, Long restaurantId, Long userId) throws IOException {
         Restaurant restaurant = restaurantDAO.findById(restaurantId);
@@ -597,33 +581,20 @@ public class RestaurantHttpHandler implements HttpHandler {
         if (restaurant == null) {
             sendResponse(exchange, 404, "{\"error\": \"Restaurant with ID " + restaurantId + " not found\"}");
             return;
-
-
         }
 
-
-
-
-
         if (!restaurant.getOwnerId().equals(userId)) {
-            sendResponse(exchange, 403, "{\"error\": \"Forbidden request: You do not have permission to access this restaurant's menus\"}");
+            sendResponse(exchange, 403, "{\"error\": \"Forbidden: You do not have permission to access this restaurant's menus\"}");
             return;
         }
 
         JsonArray menus = menuDAO.getAllMenusByRestaurantId(restaurantId);
         handleResponse(exchange, menus);
-
     }
-
-
-
-
 
     private void handleGetOrderDetailsForSeller(HttpExchange exchange, Long orderId, Long sellerId) throws IOException {
         JsonObject response = restaurantOrderDAO.getOrderDetailsForSeller(orderId, sellerId);
         handleResponse(exchange, response);
     }
-
-
 
 }

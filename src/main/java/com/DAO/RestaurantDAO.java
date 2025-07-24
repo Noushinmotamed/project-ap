@@ -1,13 +1,20 @@
 package com.DAO;
 
+import com.google.gson.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.models.*;
+import org.hibernate.query.Query;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import com.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;                                 //IF VENDOR IS NOT YOYRS, NOT FOUND OR FORBIDDEN ?
-                                                                 // I ASSUME THAT ACCEPTED -> STILL WAITING VENDOR, REJECTED-> CANCELLED, SERVED -> ON THE WAY
+// I ASSUME THAT ACCEPTED -> STILL WAITING VENDOR, REJECTED-> CANCELLED, SERVED -> ON THE WAY
 
 
 public class RestaurantDAO {
@@ -35,7 +42,6 @@ public class RestaurantDAO {
                 return response;
             }
             restaurant.setOwnerId(id);
-            user.setBrandName(restaurant.getName());
             session.save(restaurant);
             tx.commit();
             return gson.toJsonTree(restaurant).getAsJsonObject();
@@ -148,9 +154,9 @@ public class RestaurantDAO {
                 case OrderVendorStatus.accepted:
                     order.setStatus(OrderStatus.waitingVendor);
                     break;
-                    case OrderVendorStatus.rejected:
-                        order.setStatus(OrderStatus.cancelled);
-                        break;
+                case OrderVendorStatus.rejected:
+                    order.setStatus(OrderStatus.cancelled);
+                    break;
                 case OrderVendorStatus.served:
                     order.setStatus(OrderStatus.findingCourier);
                     break;
@@ -166,6 +172,7 @@ public class RestaurantDAO {
             return response;
         }
     }
+
     public Restaurant findById(Long restaurantId) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.get(Restaurant.class, restaurantId);
@@ -174,4 +181,100 @@ public class RestaurantDAO {
             return null;
         }
     }
+
+
+    public JsonObject getAnalytics(Long sellerId, String startDateStr, String endDateStr) {
+        JsonObject response = new JsonObject();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+
+            Restaurant restaurant = session.createQuery("from Restaurant where ownerId = :sellerId", Restaurant.class)
+                    .setParameter("sellerId", sellerId)
+                    .uniqueResult();
+            if (restaurant == null) {
+                response.addProperty("error", "Restaurant not found for this seller.");
+                return response;
+            }
+            Long vendorId = restaurant.getId();
+
+            String hql = "FROM Order WHERE vendorId = :vendorId AND createdAt >= :startDate AND createdAt <= :endDate";
+
+            Query<Order> query = session.createQuery(hql, Order.class);
+            query.setParameter("vendorId", vendorId);
+            query.setParameter("startDate", startDateStr + "T00:00:00");
+            query.setParameter("endDate", endDateStr + "T23:59:59");
+
+            List<Order> allOrdersInPeriod = query.getResultList();
+
+            List<Order> successfulOrders = allOrdersInPeriod.stream()
+                    .filter(o -> o.getStatus() == OrderStatus.complete)
+                    .collect(Collectors.toList());
+
+
+            double totalRevenue = successfulOrders.stream()
+                    .mapToDouble(Order::getTotalPrice)
+                    .sum();
+
+            double netIncome = successfulOrders.stream()
+                    .mapToDouble(Order::getRawPrice)
+                    .sum();
+
+            long totalOrdersCount = allOrdersInPeriod.size();
+            long successfulOrdersCount = successfulOrders.size();
+            long failedOrdersCount = totalOrdersCount - successfulOrdersCount;
+
+            Map<Long, Integer> itemSalesCount = new HashMap<>();
+            Gson gson = new Gson();
+            for (Order order : successfulOrders) {
+                String quantityJson = order.getQuantityData();
+                if (quantityJson != null && !quantityJson.isEmpty()) {
+                    Map<Long, Integer> quantities = gson.fromJson(quantityJson, new TypeToken<Map<Long, Integer>>(){}.getType());
+                    quantities.forEach((itemId, quantity) ->
+                            itemSalesCount.merge(itemId, quantity, Integer::sum)
+                    );
+                }
+            }
+
+            List<Map.Entry<Long, Integer>> topItems = itemSalesCount.entrySet().stream()
+                    .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
+                    .limit(5)
+                    .collect(Collectors.toList());
+
+            Map<String, Double> dailySales = successfulOrders.stream()
+                    .collect(Collectors.groupingBy(
+                            order -> order.getCreatedAt().substring(0, 10),
+                            Collectors.summingDouble(Order::getTotalPrice)
+                    ));
+
+            response.addProperty("totalRevenue", totalRevenue);
+            response.addProperty("netIncome", netIncome);
+            response.addProperty("totalOrders", totalOrdersCount);
+            response.addProperty("successfulOrders", successfulOrdersCount);
+            response.addProperty("failedOrders", failedOrdersCount);
+
+            response.add("bestSellingItems", convertBestSellersToJson(topItems, session));
+            response.add("dailySales", gson.toJsonTree(dailySales));
+
+            return response;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.addProperty("error", "Internal Server Error");
+            return response;
+        }
+    }
+
+    private JsonElement convertBestSellersToJson(List<Map.Entry<Long, Integer>> topItems, Session session) {
+        JsonArray bestSellersArray = new JsonArray();
+        for (Map.Entry<Long, Integer> entry : topItems) {
+            FoodItem foodItem = session.get(FoodItem.class, entry.getKey());
+            if (foodItem != null) {
+                JsonObject itemJson = new JsonObject();
+                itemJson.addProperty("foodName", foodItem.getName());
+                itemJson.addProperty("quantitySold", entry.getValue());
+                bestSellersArray.add(itemJson);
+            }
+        }
+        return bestSellersArray;
+    }
+
 }

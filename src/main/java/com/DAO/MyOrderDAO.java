@@ -83,6 +83,24 @@ public class MyOrderDAO {
             order.setStatus(OrderStatus.submitted);
             order.setCreatedAt(LocalDateTime.now().toString());
             order.setUserName(user.getFullName());
+            // ========================= شروع کد اضافه شده =========================
+            try {
+                Map<Long, Integer> quantities = new HashMap<>();
+                for (JsonElement el : itemIdsArray) {
+                    JsonObject itemObject = el.getAsJsonObject();
+                    long itemId = itemObject.get("item_id").getAsLong();
+                    int quantity = itemObject.get("quantity").getAsInt();
+                    quantities.put(itemId, quantity);
+                }
+
+                String quantityJsonString = new Gson().toJson(quantities);
+
+                order.setQuantityData(quantityJsonString);
+
+            } catch (Exception e) {
+                System.err.println("Warning: Could not save quantity data. " + e.getMessage());
+            }
+            // ========================== پایان کد اضافه شده ======================
             session.save(order);
             for(JsonElement element : itemIdsArray){
                 int itemId = element.getAsJsonObject().get("item_id").getAsInt();

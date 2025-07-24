@@ -156,9 +156,9 @@ public class MenuDAO {
 
 
         } catch (Exception e) {
-            response.addProperty("error", "Internal server error");
-            e.printStackTrace();
-            return response;
+             response.addProperty("error", "Internal server error");
+             e.printStackTrace();
+             return response;
 
         }
     }

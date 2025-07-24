@@ -76,50 +76,23 @@ public class AdminHttpHandler implements HttpHandler {
             }
 
 
-        } else if (path.matches("^/admin/users/\\d+/restaurant$")) {
-
-
-
+        }
+        else if (path.matches("^/admin/users/\\d+/restaurant$")) {
             if (method.equals("GET")) {
-
-
                 String[] pathParts = path.split("/");
-
-
                 Long userId;
-
-
                 try {
-
-
                     userId = Long.parseLong(pathParts[3]);
-
-
                 } catch (NumberFormatException e) {
-
-
                     sendResponse(exchange, 400, "{\"error\":\"Invalid User ID format\"}");
-
-
                     return;
-
-
                 }
-
-
                 handleGetRestaurantForUser(exchange, adminId, userId);
-
-
             } else {
-
-
                 sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
-
-
             }
-
-
-            return;}else {
+            return;
+        } else {
             String[] pathParts = path.split("/");
             if(pathParts.length == 5 && pathParts[2].equals("users") && pathParts[4].equals("status")) {
             if(!method.equals("PATCH")) {
@@ -246,17 +219,6 @@ public class AdminHttpHandler implements HttpHandler {
         }
         return queryParams;
     }
-    private void handleGetRestaurantForUser(HttpExchange exchange, Long adminId, Long userId) throws IOException {
-
-
-
-        JsonObject response = adminController.getRestaurantForUser(adminId, userId);
-
-
-        handleResponse(exchange, response);
-
-
-    }
 
     private static String decodeSpaces(String str) {
         // Replace %20 with space
@@ -264,5 +226,10 @@ public class AdminHttpHandler implements HttpHandler {
         // Replace + with space (optional, since some systems use + for spaces)
         str = str.replace("+", " ");
         return str;
+    }
+
+    private void handleGetRestaurantForUser(HttpExchange exchange, Long adminId, Long userId) throws IOException {
+        JsonObject response = adminController.getRestaurantForUser(adminId, userId);
+        handleResponse(exchange, response);
     }
 }
